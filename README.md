@@ -103,7 +103,9 @@ for(i in 1:10){
 ```
 
 #### 2. run deconvolution on the simulation object
+```r
 deconv_results=run_deconv(simulation_repeats,run_linseed = T,CellTypeNumber = ncol(simulated_frac))
+```
 
 #### 3. evaluate the performance of each deconvolution method
 ```r
@@ -112,7 +114,7 @@ cell_map=get_cell_map(deconv_results)
 mapping=get_mapping_list(cell_map,simulated_frac)
 deconv_performance_results=run_evalu(deconv_results,simulated_frac,cell_map,mapping)
 # deconvolution results can be summarized in a long table
-performance_table=quick_gather(deconv_performance_results,'maxcor')
+performance_table=quick_gather(deconv_performance_results,'maxcor') 
 head(performance_table)
 ```
 | cell_type | method | value | group | rep 
@@ -128,6 +130,6 @@ head(performance_table)
 ```r
 deconv_evalu_plot(deconv_performance_results[[1]]$homo_evalu$R$linseed)
 ```
-<img src="https://github.com/humengying0907/deconvBenchmarking/blob/main/images/performance_visualization.png" width=80% height=80%>
+<img src="https://github.com/humengying0907/deconvBenchmarking/blob/main/images/performance_visualization.png" width=50% height=50%>
 
 
