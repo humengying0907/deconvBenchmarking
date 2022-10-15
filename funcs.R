@@ -50,6 +50,35 @@ make_unique<-function(v){
   return(v[!duplicated(v)])
 }
 
+get_cell_map<-function(performance_obj){
+  build_df=function(deconv_name,deconv_results){
+    data.frame(method=deconv_name,method_cell_type=rownames(deconv_results[[deconv_name]]))
+  }
+  deconv_names=names(performance_obj[[1]]$homo_deconvResults)
+  cell_map=do.call(rbind,lapply(deconv_names,build_df,performance_obj[[1]]$homo_deconvResults)) 
+  cell_map$ID=seq(1,nrow(cell_map))
+  cell_map
+}
+
+get_mapping_list<-function(cell_map,simulated_frac){
+  mapping=list()
+  for(i in colnames(simulated_frac)){
+    mapping[[i]]=which(cell_map$method_cell_type==i)
+  }
+  names(mapping)=colnames(simulated_frac)
+  
+  linseed_rowID=cell_map$ID[cell_map$method=='linseed']
+  for(i in 1:length(mapping)){
+    mapping[[i]]=c(mapping[[i]],linseed_rowID)
+  }
+  CAMfree_rowID=cell_map$ID[cell_map$method=='CAMfree']
+  for(i in 1:length(mapping)){
+    mapping[[i]]=c(mapping[[i]],CAMfree_rowID)
+  }
+  mapping
+}
+
+
 #################### functions used for cell fraction simulation ####################
 # simulated from beta distribution of cell fractions in the single cell profile
 simulate_frac<-function(scMeta,n,colnames_of_sample,colnames_of_cellType,fixed_cell_type=NULL){
@@ -342,7 +371,7 @@ create_semiheterSimulation<-function(frac_table,scExpr,scMeta,colnames_of_cellTy
 }
 
 ################## functions for DE analysis ##########################
-# marker.fc() function comes from deconv benchmark paper (note: pvalue is not reported)
+# marker.fc() function comes from https://github.com/favilaco/deconv_benchmark
 marker.fc <- function(fit2, cont.matrix,log2.threshold = 1, output_name = "markers"){
   
   topTable_RESULTS = limma::topTable(fit2, coef = 1:ncol(cont.matrix), number = Inf, adjust.method = "BH", p.value = 0.05, lfc = log2.threshold)
@@ -384,7 +413,7 @@ marker.fc <- function(fit2, cont.matrix,log2.threshold = 1, output_name = "marke
   
 }
 
-one_against_all_statisticsV2<-function(scExpr,cell_type_labels,hv_genes){
+one_against_all_statistics<-function(scExpr,cell_type_labels,hv_genes){
   # scExpr has genes in rows and samples in columns, and should be un-log transformed
   # cell_type_labels correspond to columns in scExpr
   stopifnot(ncol(scExpr)==length(cell_type_labels))
@@ -404,7 +433,7 @@ one_against_all_statisticsV2<-function(scExpr,cell_type_labels,hv_genes){
   return(list(fit2,cont.matrix)) 
 }
 
-pairwiseTTest_statisticsV2<-function(scExpr,cell_type_labels,cell_state_labels,hv_genes){
+pairwiseTTest_statistics<-function(scExpr,cell_type_labels,cell_state_labels,hv_genes){
   # scExpr has genes in rows and samples in columns, and should be un-log transformed
   stopifnot(ncol(scExpr)==length(cell_type_labels))
   stopifnot(ncol(scExpr)==length(cell_state_labels))
@@ -421,7 +450,7 @@ pairwiseTTest_statisticsV2<-function(scExpr,cell_type_labels,cell_state_labels,h
   return(diff.exp.stat)
 }
 
-build_DE_standardV2<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n=50){
+build_DE_standard<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n=50){
   fit2=DE_statistics[[1]]
   cont.matrix=DE_statistics[[2]]
   markers_loose=marker.fc(fit2,cont.matrix,log2.threshold = 1) # set up loose threshold in case that there's not enough genes for a cell type
@@ -458,7 +487,7 @@ build_DE_standardV2<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n=50){
   return(list(DE_list=DE_list,sig_genes=sig_genes))
 }
 
-build_DE_pairwiseTTestV2<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n=50){
+build_DE_pairwiseTTest<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n=50){
   DE_list<-list() 
   sig_genes=NULL
   DE_cellTypes=names(DE_statistics)
@@ -493,7 +522,6 @@ build_DE_pairwiseTTestV2<-function(DE_statistics,log2FC=2,minimum_n=15,maximum_n
 
 ################## function used for training/testing ############################
 create_train_test_splitting<-function(scMeta,colnames_of_sample,colnames_of_cellType){
-  
   # make sure that in training cells contain around half of each cell types
   # failing_criteria controls that number of cells is within 40%-60% percent of the original meta
   scMeta_summary=scMeta %>%   group_by_(colnames_of_sample, colnames_of_cellType) %>%
@@ -504,7 +532,7 @@ create_train_test_splitting<-function(scMeta,colnames_of_sample,colnames_of_cell
     training_cells=sample(rownames(scMeta),size = floor(nrow(scMeta)/2),replace = F)
     training_meta=scMeta[training_cells,]
     
-    trainMeta_summary=training_meta %>%   group_by_(colnames_of_sample, colnames_of_cellType) %>%
+    trainMeta_summary=training_meta %>% group_by_(colnames_of_sample, colnames_of_cellType) %>%
       summarise(n=n()) %>%
       mutate(freq=n/sum(n)) %>%group_by_(colnames_of_cellType) %>% summarise(sum=sum(n))
     
@@ -524,17 +552,19 @@ create_train_test_splitting<-function(scMeta,colnames_of_sample,colnames_of_cell
   
 }
 
-create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_of_cellType,colnames_of_cellState,
-                                     simulated_frac,
+create_simulation_fold <- function(scExpr,scMeta,colnames_of_sample,colnames_of_cellType,
+                                     simulated_frac, # simulated cell fractions with samples in rows and cell types in columns
                                      max.spec_cutoff_for_DE=0.3, # parameters for hv genes 
-                                     max.spec_cutoff_for_autogeneS=0.5, # parametner for hv genes
                                      chunk_size_threshold=5,scale_to_million=T, # heter-simulation parameters
                                      ncells_perSample=500, # homo-simulation parameter
                                      fixed_cell_type,chunk_size_threshold_for_fixed_cell=10, # semiheter-simulation parameters
-                                     log2FC=2,minimum_n=15,maximum_n=50, # marker gene list parameters (maximum_n is set higher in case of downsampling)
-                                     create_autogeneS_input=T,autogeneS_input_file_name=NULL,
+                                     log2FC=2,minimum_n=15,maximum_n=50, colnames_of_cellState=NULL,# marker gene list parameters (maximum_n is set higher in case of downsampling)
+                                     create_autogeneS_input=F,autogeneS_input_file_name=NULL, max.spec_cutoff_for_autogeneS=0.5, # parametner for hv genes# create input for autogeneS
                                      create_cibersortx_input=F,cibersort_input_file_name=NULL,cibersort_downsample=F,cibersort_downsample_scale=0.2){
   stopifnot(nrow(scMeta)==ncol(scExpr))
+  if(is.null(colnames_of_cellState)){
+    colnames_of_cellState=colnames_of_cellType
+  }
   
   simulation_fold=new.env()
   
@@ -559,26 +589,22 @@ create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_o
   cell_state_labels_train=scMeta_train[,colnames_of_cellState]
   
   stopifnot(all.equal(rownames(scMeta_train),colnames(scExpr_train)))
+  stopifnot(all.equal(rownames(scMeta_test),colnames(scExpr_test)))
   
   message('>>> find hv genes from scExpr_train')
-  sc.stat <- plot.scRNA.outlier(
-    input=scExpr_train %>% t(), #make sure the colnames are gene symbol or ENSMEBL ID 
+  sc.stat <- BayesPrism::plot.scRNA.outlier(
+    input=scExpr_train %>% t(), 
     cell.type.labels=cell_type_labels_train,
-    species="hs", #currently only human(hs) and mouse(mm) annotations are supported
-    return.raw=TRUE #return the data used for plotting. 
-    #pdf.prefix="gbm.sc.stat" specify pdf.prefix if need to output to pdf
+    species="hs", 
+    return.raw=TRUE #return the data used for plotting
   )
+  # max.spec is the maximum specificity of each gene
   hv_genes_for_DE=rownames(sc.stat)[sc.stat$max.spec>=max.spec_cutoff_for_DE]
-  print(paste('use',length(hv_genes_for_DE),'genes for DE analysis in iteration',i))
-  stopifnot(length(hv_genes_for_DE)>8000)
-  
-  hv_genes_for_autogeneS=rownames(sc.stat)[sc.stat$max.spec>=max.spec_cutoff_for_autogeneS]
-  print(paste('use',length(hv_genes_for_autogeneS),'genes for autogeneS input in iteration',i))
-  stopifnot(length(hv_genes_for_autogeneS)>4000)
-  
+  print(paste('use',length(hv_genes_for_DE),'genes for DE analysis'))
+
   message('>>> running DE analysis on scExpr_train')
-  limma_statistics=one_against_all_statisticsV2(scExpr_train,cell_type_labels_train,hv_genes_for_DE)
-  scran_statistics=pairwiseTTest_statisticsV2(scExpr_train,cell_type_labels_train,cell_state_labels_train,hv_genes_for_DE)
+  limma_statistics=one_against_all_statistics(scExpr_train,cell_type_labels_train,hv_genes_for_DE)
+  scran_statistics=pairwiseTTest_statistics(scExpr_train,cell_type_labels_train,cell_state_labels_train,hv_genes_for_DE)
   DE_statistics=new.env()
   DE_statistics$DE_statistics_limma=limma_statistics
   DE_statistics$DE_statistics_scran=scran_statistics
@@ -587,9 +613,9 @@ create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_o
   message('>>> summarizing DE statistics')
   DE_list_bundles=list()
   print('build DE list based on limma statistics')
-  limma_results=build_DE_standardV2(limma_statistics,log2FC,minimum_n,maximum_n)
+  limma_results=build_DE_standard(limma_statistics,log2FC,minimum_n,maximum_n)
   print('build DE list based on scran statistics')
-  scran_results=build_DE_pairwiseTTestV2(scran_statistics,log2FC,minimum_n,maximum_n)
+  scran_results=build_DE_pairwiseTTest(scran_statistics,log2FC,minimum_n,maximum_n)
   DE_list_bundles[['limmaMarkers']]=limma_results$DE_list
   DE_list_bundles[['scranMarkers']]=scran_results$DE_list
   simulation_fold$DE_list_bundles=DE_list_bundles
@@ -597,6 +623,9 @@ create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_o
   message('>>> build reference Matrix')
   C=build_ref_matrix(scExpr_train,cell_type_labels_train)
   if(create_autogeneS_input==T){
+    hv_genes_for_autogeneS=rownames(sc.stat)[sc.stat$max.spec>=max.spec_cutoff_for_autogeneS]
+    print(paste('use',length(hv_genes_for_autogeneS),'genes for autogeneS input'))
+    stopifnot(length(hv_genes_for_autogeneS)>2000) 
     write.table(C[hv_genes_for_autogeneS,],file = autogeneS_input_file_name,sep = ',') # input for autogeneS
   }
   ref_list=list()
@@ -612,7 +641,7 @@ create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_o
       sc_raw = scExpr_train[,downsampled_cells]
       colnames(sc_raw)=scMeta_downsampled[,colnames_of_cellType]
       sc_raw=cbind(data.frame(GeneSymbol=rownames(sc_raw)),sc_raw)
-      write.table(sc_raw,file = paste0('scMB/cibersortx_input/MB_sc',i,'.txt'),sep = '\t',row.names = F)
+      write.table(sc_raw,file = cibersort_input_file_name,sep = '\t',row.names = F)
     }else{
       sc_raw = scExpr_train
       colnames(sc_raw)=scMeta_train[,colnames_of_cellType]
@@ -622,30 +651,24 @@ create_simulation_foldV4 <- function(scExpr,scMeta,colnames_of_sample,colnames_o
   }
   
   message('>>> build heter simulation on testing')
-  heter_simulator=create_heterSimulationV3(simulated_frac,scExpr_test,scMeta_test,
-                                           colnames_of_cellType,colnames_of_sample,
-                                           chunk_size_threshold,
-                                           scale_to_million)
   heter=new.env()
-  heter$heter_expr=heter_simulator$D
-  heter$heter_chunkSizeTable=heter_simulator$chunk_size_table
+  heter$heter_expr=create_heterSimulation(simulated_frac,scExpr_test,scMeta_test,
+                                            colnames_of_cellType,colnames_of_sample,
+                                            chunk_size_threshold,
+                                            scale_to_million)
   simulation_fold$heter=heter
   
   message('>>> build semiheter simulation on testing')
-  semiheter_simulator=create_semiheterSimulation(simulated_frac,scExpr_test,scMeta_test,
-                                                 colnames_of_cellType,colnames_of_sample,fixed_cell_type,
-                                                 ncells_perSample,chunk_size_threshold_for_fixed_cell)
-  
   semiheter=new.env()
-  semiheter$semiheter_expr=semiheter_simulator$D
-  semiheter$semiheter_chunkSizeTable=semiheter_simulator$chunk_size_table
+  semiheter$semiheter_expr=create_semiheterSimulation(simulated_frac,scExpr_test,scMeta_test,
+                                                      colnames_of_cellType,colnames_of_sample,fixed_cell_type,
+                                                      ncells_perSample,chunk_size_threshold_for_fixed_cell)
   simulation_fold$semiheter=semiheter
   
   message('>>> build homo simulation on testing')
-  simulation_fold$homo=create_homoSimulationV2(scExpr_test,cell_type_labels_test,simulated_frac,ncells_perSample)
+  simulation_fold$homo=create_homoSimulation(scExpr_test,scMeta_test,colnames_of_cellType,simulated_frac,ncells_perSample)
   
   return(simulation_fold)
-  
 }
 
 
@@ -681,22 +704,7 @@ gsva_result=function(Expr,gsva_list){
   filter_criteria= do.call(c,lapply(gsva_list,length))
   gsva_list=gsva_list[names(filter_criteria)[filter_criteria>=2]]
   gsva_scores=GSVA::gsva(Expr,gsva_list,method='ssgsea',ssgsea.norm=F)
-  apply(gsva_scores, 1, scale01) %>% t()# scale the scores to [0,1], just for simplicity
-}
-
-singscore_result=function(Expr,gsva_list){
-  # filter element in the list with at least 2 elements
-  filter_criteria= do.call(c,lapply(gsva_list,length))
-  gsva_list=gsva_list[names(filter_criteria)[filter_criteria>=2]]
-  
-  rankData<-rankGenes(Expr)
-  quick_singscore=function(genes,rankData){
-    df<-simpleScore(rankData, upSet =genes)
-    df$TotalScore
-  }
-  m=do.call(rbind,lapply(gsva_list,quick_singscore,rankData))
-  colnames(m)=colnames(Expr)
-  return(m)
+  apply(gsva_scores, 1, scale01) %>% t()# scale the scores to [0,1] for simplicity
 }
 
 PCA_result=function(Expr,gsva_list){
@@ -706,7 +714,7 @@ PCA_result=function(Expr,gsva_list){
   
   quick_pca=function(genes,Expr){
     mat=Expr[rownames(Expr) %in% genes,]
-    exp.PCA<-FactoMineR::PCA(t(as.matrix(mat)),graph = F,scale.unit = T) # need to compare the difference between non_log/log 
+    exp.PCA<-FactoMineR::PCA(t(as.matrix(mat)),graph = F,scale.unit = T) 
     exp.PCA$ind$coord[,1] 
   }
   m=do.call(rbind,lapply(gsva_list, quick_pca,Expr))
@@ -724,17 +732,6 @@ avg_result=function(Expr,gsva_list){
   }
   m=do.call(rbind,lapply(gsva_list, quick_avg,Expr))
   return(m)
-}
-
-DSA_result=function(Expr,gsva_list){
-  empty_check=do.call(c,lapply(gsva_list,length))
-  empty_list_names=names(empty_check)[empty_check==0]
-  est = EstimateWeight(Expr, gsva_list[!names(gsva_list)%in%empty_list_names],method = 'QP_LM')$weight # reference: https://github.com/LiuzLab/paper_deconvBenchmark/blob/master/code/src/Methods_deconvolution.R
-  est = as.data.frame(est)
-  # DSA return errors when the gene list is empty
-  for (empty_list_name in empty_list_names){
-    est[empty_list_name,]=rep(0,ncol=est)
-  }
 }
 
 CAMmarker_result=function(Expr,gsva_list){
@@ -804,23 +801,33 @@ solveNNLS= function(Y, basis,   lessThanOne = T, weighted=F, rescale=T, quantile
   return(mixCoef)
 }
 
-deconv_resultV6=function(simulation_fold,Expr,is_tumor=TRUE,methods,scale_mrna=FALSE,run_linseed=F,run_CAMfree=F,CellTypeNumber=NULL){
+deconv_result=function(simulation_fold,Expr,
+                       methods=NULL,is_tumor=TRUE,scale_mrna=FALSE, # parameters for immunedeconv::deconvolute
+                       run_xcell=F,
+                       run_linseed=F,run_CAMfree=F,CellTypeNumber=NULL){
+
   all_results=list()
-  for (i in 1:length(methods)){
-    all_results[[i]]=deconvolute(Expr,methods[i], column="gene_symbol",scale_mrna = scale_mrna, tumor = is_tumor) %>% column_to_rownames('cell_type') %>% as.matrix()
-  }
-  names(all_results)=names(methods)
+ 
+ if(!is.null(methods)){
+    # use methods supported by immunedeconv: https://github.com/omnideconv/immunedeconv
+    # example: methods=c('epic','quantiseq','xcell')
+    message('>>> Running immunedeconv::deconvolute')
+    for (i in 1:length(methods)){
+      all_results[[i]]=immunedeconv::deconvolute(Expr,methods[i], column="gene_symbol",scale_mrna = scale_mrna, tumor = is_tumor) %>% column_to_rownames('cell_type') %>% as.matrix()
+    }
+    names(all_results)=methods
+ }
   
-  message('>>> Running xCell')
-  all_results[['xCellFull']]=xCellAnalysis(Expr,rnaseq = T) 
+  if(run_xcell==T){
+    message('>>> Running xCell')
+    all_results[['xCellFull']]=xCell::xCellAnalysis(Expr,rnaseq = T) 
+  }
   
   message('>>> Running enrichment analysis based on customized gene list')
   gene_list_names=names(simulation_fold$DE_list_bundles)
   for (gene_list_name in gene_list_names){
     all_results[[paste0('MarkerBased_gsva_',gene_list_name)]]=gsva_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
-    all_results[[paste0('MarkerBased_singscore_',gene_list_name)]]=singscore_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
     all_results[[paste0('MarkerBased_eigengene_',gene_list_name)]]=PCA_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
-    all_results[[paste0('MarkerBased_DSA_',gene_list_name)]]=DSA_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
     all_results[[paste0('MarkerBased_CAMTHC_',gene_list_name)]]=CAMmarker_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
     all_results[[paste0('MarkerBased_avgExpr_',gene_list_name)]]=avg_result(Expr,simulation_fold$DE_list_bundles[[gene_list_name]])
   }
@@ -867,24 +874,23 @@ deconv_resultV6=function(simulation_fold,Expr,is_tumor=TRUE,methods,scale_mrna=F
   return(all_results)
 }
 
-run_deconvV4<-function(simulation_repeats_obj,methods,scale_mrna=FALSE,run_linseed=F,CellTypeNumber=NULL,query,write_temp_file=F,temp_file=NULL){
+run_deconv<-function(simulation_repeats_obj,
+                     methods=NULL,is_tumor=TRUE,scale_mrna=FALSE,
+                     run_xcell=F,run_linseed=F,run_CAMfree=F,CellTypeNumber=NULL){
   performance_obj=list()
-  for(i in query){
+  for(i in 1:length(simulation_repeats_obj)){
     deconv_fold=list()
-    deconv_fold[['homo_deconvResults']]=deconv_resultV6(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$homo,is_tumor,methods,scale_mrna,run_linseed,CellTypeNumber)
-    deconv_fold[['semiheter_deconvResults']]=deconv_resultV6(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$semiheter$semiheter_expr,is_tumor,methods,scale_mrna,run_linseed,CellTypeNumber)
-    deconv_fold[['heter_deconvResults']]=deconv_resultV6(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$heter$heter_expr,is_tumor,methods,scale_mrna,run_linseed,CellTypeNumber)
+    deconv_fold[['homo_deconvResults']]=deconv_result(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$homo,methods,is_tumor,scale_mrna,run_xcell,run_linseed,run_CAMfree,CellTypeNumber)
+    deconv_fold[['semiheter_deconvResults']]=deconv_result(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$semiheter$semiheter_expr,methods,is_tumor,scale_mrna,run_xcell,run_linseed,run_CAMfree,CellTypeNumber)
+    deconv_fold[['heter_deconvResults']]=deconv_result(simulation_repeats_obj[[i]],simulation_repeats_obj[[i]]$heter$heter_expr,methods,is_tumor,scale_mrna,run_xcell,run_linseed,run_CAMfree,CellTypeNumber)
     performance_obj[[i]]=deconv_fold
-    if (write_temp_file==T){
-      save(performance_obj,file = temp_file)
-    }
     message(paste('>>>>>>>>>>>>>>>>>>>>>>>>> finish',i,'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'))
   }
   return(performance_obj)
 }
 
-deconv_evaluV3<-function(deconv_name,deconv_results,Y,cell_map,mapping_list){
-  # this version of deconv_evalu is for lapply
+############### deconvolution performance on simulation repeats object ############
+deconv_result<-function(deconv_name,deconv_results,Y,cell_map,mapping_list){
   # E is the estimated fraction, with cell types in columns and samples in rows
   # Y is the true fraction, with cell types in columns and samples in rows
   # cell_map is used for mapping, is built mannually
@@ -923,15 +929,14 @@ deconv_evaluV3<-function(deconv_name,deconv_results,Y,cell_map,mapping_list){
   summ <- M %>% 
     group_by(cell_type) %>% # note that in summ, cell_type is ordered alphabetically
     summarise(#Rsq = R2(Sepal.Length, Petal.Length),
-      RMSE = RMSE(true_frac, estimate,na.rm = T),
+      RMSE = caret::RMSE(true_frac, estimate,na.rm = T),
       cor = cor(true_frac,estimate,method = 'pearson',use = 'pairwise.complete.obs')) %>% 
     mutate_if(is.numeric, round, digits=2) 
   summ$maxCorName=M$maxCorName[match(summ$cell_type,M$cell_type)]
   return(list(M=M,summ=summ))
 }
 
-############### deconvolution performance on simulation repeats object ############
-run_evaluV3<-function(deconv_repeats_obj,Y,cell_map,mapping_list){
+run_evalu<-function(deconv_repeats_obj,Y,cell_map,mapping_list){
   stopifnot(length(deconv_repeats_obj)>0)
   
   for(i in 1:length(deconv_repeats_obj)){
@@ -949,7 +954,7 @@ run_evaluV3<-function(deconv_repeats_obj,Y,cell_map,mapping_list){
 
     for (listing in listings){
       evalu=list()
-      evalu[['R']]=lapply(d,deconv_evaluV3,deconv_repeats_obj[[i]][[listing]],Y,cell_map,mapping_list)
+      evalu[['R']]=lapply(d,deconv_result,deconv_repeats_obj[[i]][[listing]],Y,cell_map,mapping_list)
       names(evalu[['R']])=d
       
       stopifnot(all.equal(evalu[['R']][[1]]$summ$cell_type,colnames(Y)[order(colnames(Y))])) # cell types in summ table should be alphabetically ordered
@@ -974,7 +979,7 @@ run_evaluV3<-function(deconv_repeats_obj,Y,cell_map,mapping_list){
   return(deconv_repeats_obj)
 }
 
-quick_gatherV3=function(deconv_performance_repeats,obj_name){
+quick_gather=function(deconv_performance_repeats,obj_name){
   stopifnot(obj_name %in% c('maxcor','RMSE'))
   all=data.frame(matrix(NA,ncol = 5,nrow=0))
   colnames(all)=c('cell_type','method',obj_name,'group','rep')
@@ -991,7 +996,7 @@ quick_gatherV3=function(deconv_performance_repeats,obj_name){
 }
 
 ################## visualization functions ###########################
-deconv_evalu_plotV2<-function(l,title=NULL,nrow=3){
+deconv_evalu_plot<-function(l,title=NULL,nrow=2){
   M=l$M
   summ=l$summ
   summ=summ[order(summ$cell_type),] # order summ alphabetically
@@ -1002,7 +1007,8 @@ deconv_evalu_plotV2<-function(l,title=NULL,nrow=3){
     facet_wrap(~cell_type,nrow=nrow)+  # scatter plot will be arranged alphabetically
     theme(aspect.ratio=1)+
     ggtitle(title)+
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5))+
+    theme_bw()
   
   p + geom_table_npc(data = summ, label = lapply(split(summ, summ$cell_type),
                                                  FUN = function(entry) {subset(entry, select = -cell_type)}),
@@ -1010,18 +1016,5 @@ deconv_evalu_plotV2<-function(l,title=NULL,nrow=3){
                      table.theme = ttheme_gtlight)
 }
 
-cellType_barplot<-function(scMeta,colnames_of_sample, colnames_of_cellType,title=NULL){
-  cell_type_table = scMeta %>%
-    group_by_(colnames_of_sample, colnames_of_cellType) %>%
-    summarise(n=n()) %>%
-    mutate(freq=n/sum(n))
-  
-  ggplot(cell_type_table, aes_string(colnames_of_sample, 'n')) +
-    geom_bar(aes_string(fill=colnames_of_cellType), stat="identity") +
-    ggtitle(title)+
-    theme_bw()+
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-          plot.title = element_text(hjust = 0.5))
-}
 
 
