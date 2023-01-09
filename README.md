@@ -54,7 +54,7 @@ head(scMeta)
 ## Create simulated cell fractions
 We provide a function to simulate cell proportions based on the cell fraction distributions of the single-cell profiles. Calling ```simulated_frac()``` will automatically return paired histograms comparing distribution of cell fraction distributions for the selected cell type. 
 ```r
-simulated_frac=simulate_frac(scMeta,100,'sampleID','cell_type','malignant')
+simulated_frac=simulate_frac(scMeta=scMeta,n=100,colnames_of_sample='sampleID',colnames_of_cellType='cell_type',fixed_cell_type='malignant')
 ```
 <img src="https://github.com/humengying0907/deconvBenchmarking/blob/main/images/simulated_frac.png" width=50% height=50%>
 
@@ -63,13 +63,13 @@ We provide three bulk simulation strategies that aggregate single cells in diffe
 #### 1. homogeneous simulation
 This method aggregates random single cells with pre-defined fractions and adds up the expression values on linear scale.
 ```r
-homo=create_homoSimulation(scExpr,scMeta,colnames_of_cellType = 'cell_type',simulated_frac,ncells_perSample = 500)
+homo=create_homoSimulation(scExpr=scExpr,scMeta=scMeta,colnames_of_cellType = 'cell_type',simulated_frac,ncells_perSample = 500)
 ```
 #### 2. semi-heterogeneous simulation
 
 With semi simulation, we restricted that the malignant parts of each synthetic bulk sample come from the same patient, while the non-malignant parts are randomly selected regardless of where they are from. ```chunk_size_threshold_for_fixed_cell``` controls the minimum number of malignant cells required for a synthetic bulk sample.
 ```r
-semi=create_semiheterSimulation(simulated_frac,scExpr,scMeta,
+semi=create_semiheterSimulation(frac_table=simulated_frac,scExpr=scExpr,scMeta=scMeta,
                                 colnames_of_cellType = 'cell_type',colnames_of_sample = 'sampleID',
                                 fixed_cell_type='malignant',ncells_perSample = 500,chunk_size_threshold_for_fixed_cell = 10)
 ```
@@ -77,9 +77,9 @@ semi=create_semiheterSimulation(simulated_frac,scExpr,scMeta,
 
 We restricted that both malignant and non-malignant parts of each synthetic bulk sample come from the same patient. ```chunk_size_threshold``` controls the minimum number of cells to aggregate for each cellular components.
 ```r
-heter=create_heterSimulation(simulated_frac,scExpr,scMeta,
+heter=create_heterSimulation(frac_table=simulated_frac,scExpr=scExpr,scMeta=scMeta,
                              colnames_of_cellType = 'cell_type',colnames_of_sample = 'sampleID',
-                             chunk_size_threshold = 3)
+                             chunk_size_threshold = 3,use_chunk='all')
 ```
 ## Run benchmarking pipeline
 We provide a benchmarking pipeline that evaluates the performance of different deconvolution methods. 

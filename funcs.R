@@ -151,12 +151,16 @@ meta_shuffle<-function(scMeta,
 heter_aggregate<-function(ID,frac_table,scExpr,scMeta,colnames_of_cellType,
                           colnames_of_sample,
                           chunk_size_threshold=5,
+                          use_chunk='all',
                           scale_to_million=T){
   
   # frac_table: simulated fraction with samples in rows and cell types in columns
   # scExpr: genes in rows and cell_barcode in columns
   # scMeta: dataframe that stores scMeta info of each cells, rownames of scMeta should be equal to colnames of scExpr
   # chunk_size_threshold: the minimum number of cells to aggregate for every cell type
+  # use_chunk: whether or not use all chunk to create reference profile, default='all'; other options include 'random'
+  
+  stopifnot(all.equal(rownames(scMeta),colnames(scExpr)))
   
   simulated_frac=frac_table[ID,]
   scMeta=meta_shuffle(scMeta,colnames_of_cellType,colnames_of_sample)
@@ -219,29 +223,44 @@ heter_aggregate<-function(ID,frac_table,scExpr,scMeta,colnames_of_cellType,
   stopifnot(length(unique(cellType))==length(unique_cellType))
   group = list()
   for(i in unique(cellType)){ 
-    group[[i]] <- which(cellType %in% i)
+    group[[i]] <- p[which(cellType %in% i)]
   }
-  
-  X = scExpr[,p]
-  C = lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F])) 
-  C = do.call(cbind, C)
-  
-  E=C %*% matrix(simulated_frac[colnames(C)],ncol = 1)
+  if(use_chunk=='all'){
+    # use all chunk information to create reference profile
+    X = scExpr[,p]
+    C = lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F])) 
+    C = do.call(cbind, C)
+    E = C %*% matrix(simulated_frac[colnames(C)],ncol = 1)
+  }else if(use_chunk=='random'){
+    # randomly select 50%-100% cells of each chunk to create reference profile
+    quick_select=function(cell_barcodes){
+      percent=sample(seq(50,100),size = 1)
+      selected=sample(cell_barcodes,size = ceiling(length(cell_barcodes)*percent*0.01))
+      selected
+    }
+    group=lapply(group,quick_select)
+    X = scExpr[,do.call(c,group)]
+    C = lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F])) 
+    C = do.call(cbind, C)
+    E = C %*% matrix(simulated_frac[colnames(C)],ncol = 1)
+  }
   if (scale_to_million==T){
     E=apply(E,2,function(x)((x/sum(x))*1e+06)) 
   }
   return(E)
 }
 
+
 create_heterSimulation<-function(frac_table,scExpr,scMeta,colnames_of_cellType,
-                                   colnames_of_sample,
-                                   chunk_size_threshold=5,
-                                   scale_to_million=T){
+                                 colnames_of_sample,
+                                 chunk_size_threshold=5,
+                                 use_chunk='all',
+                                 scale_to_million=T){
   D=do.call(cbind,lapply(seq(1,nrow(frac_table)),heter_aggregate,
-                              frac_table,
-                              scExpr,scMeta,
-                              colnames_of_cellType,colnames_of_sample,
-                              chunk_size_threshold,scale_to_million))
+                         frac_table,
+                         scExpr,scMeta,
+                         colnames_of_cellType,colnames_of_sample,
+                         chunk_size_threshold,use_chunk,scale_to_million))
   colnames(D)=paste0('simulated',1:ncol(D))
   return(D)
 }
