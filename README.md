@@ -92,7 +92,7 @@ for(i in 1:10){
   simulation_repeats[[i]]=create_simulation_fold(scExpr,scMeta,colnames_of_sample = 'sampleID',colnames_of_cellType = 'cell_type',
                                                  simulated_frac = simulated_frac,
                                                  max.spec_cutoff_for_DE=0.3, # parameters for informative gene filtering
-                                                 chunk_size_threshold=3,scale_to_million=T, # heter-simulation parameters
+                                                 chunk_size_threshold=3,use_chunk = 'all',scale_to_million=T, # heter-simulation parameters
                                                  ncells_perSample=500, # homo-simulation parameter
                                                  fixed_cell_type='malignant',chunk_size_threshold_for_fixed_cell=10, #semiheter-simulation parameters
                                                  log2FC=2,minimum_n=15,maximum_n=50,# marker gene list parameters

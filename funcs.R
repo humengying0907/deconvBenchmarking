@@ -574,7 +574,7 @@ create_train_test_splitting<-function(scMeta,colnames_of_sample,colnames_of_cell
 create_simulation_fold <- function(scExpr,scMeta,colnames_of_sample,colnames_of_cellType,
                                      simulated_frac, # simulated cell fractions with samples in rows and cell types in columns
                                      max.spec_cutoff_for_DE=0.3, # parameters for hv genes 
-                                     chunk_size_threshold=5,scale_to_million=T, # heter-simulation parameters
+                                     chunk_size_threshold=5,use_chunk = 'all', scale_to_million=T, # heter-simulation parameters
                                      ncells_perSample=500, # homo-simulation parameter
                                      fixed_cell_type,chunk_size_threshold_for_fixed_cell=10, # semiheter-simulation parameters
                                      log2FC=2,minimum_n=15,maximum_n=50, colnames_of_cellState=NULL,# marker gene list parameters (maximum_n is set higher in case of downsampling)
@@ -673,8 +673,7 @@ create_simulation_fold <- function(scExpr,scMeta,colnames_of_sample,colnames_of_
   heter=new.env()
   heter$heter_expr=create_heterSimulation(simulated_frac,scExpr_test,scMeta_test,
                                             colnames_of_cellType,colnames_of_sample,
-                                            chunk_size_threshold,
-                                            scale_to_million)
+                                            chunk_size_threshold,use_chunk,scale_to_million)
   simulation_fold$heter=heter
   
   message('>>> build semiheter simulation on testing')
@@ -909,7 +908,7 @@ run_deconv<-function(simulation_repeats_obj,
 }
 
 ############### deconvolution performance on simulation repeats object ############
-deconv_result<-function(deconv_name,deconv_results,Y,cell_map,mapping_list){
+deconv_evalu<-function(deconv_name,deconv_results,Y,cell_map,mapping_list){
   # E is the estimated fraction, with cell types in columns and samples in rows
   # Y is the true fraction, with cell types in columns and samples in rows
   # cell_map is used for mapping, is built mannually
@@ -973,7 +972,7 @@ run_evalu<-function(deconv_repeats_obj,Y,cell_map,mapping_list){
 
     for (listing in listings){
       evalu=list()
-      evalu[['R']]=lapply(d,deconv_result,deconv_repeats_obj[[i]][[listing]],Y,cell_map,mapping_list)
+      evalu[['R']]=lapply(d,deconv_evalu,deconv_repeats_obj[[i]][[listing]],Y,cell_map,mapping_list)
       names(evalu[['R']])=d
       
       stopifnot(all.equal(evalu[['R']][[1]]$summ$cell_type,colnames(Y)[order(colnames(Y))])) # cell types in summ table should be alphabetically ordered

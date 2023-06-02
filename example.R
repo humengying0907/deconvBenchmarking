@@ -30,7 +30,7 @@ for(i in 1:10){
   simulation_repeats[[i]]=create_simulation_fold(scExpr,scMeta,colnames_of_sample = 'sampleID',colnames_of_cellType = 'cell_type',
                                                  simulated_frac = simulated_frac,
                                                  max.spec_cutoff_for_DE=0.3, # parameters for hv genes 
-                                                 chunk_size_threshold=3,scale_to_million=T, # heter-simulation parameters
+                                                 chunk_size_threshold=3,use_chunk = 'all',scale_to_million=T, # heter-simulation parameters
                                                  ncells_perSample=500, # homo-simulation parameter
                                                  fixed_cell_type='malignant',chunk_size_threshold_for_fixed_cell=10, # semiheter-simulation parameters
                                                  log2FC=2,minimum_n=15,maximum_n=50,# marker gene list parameters (maximum_n is set higher in case of downsampling)
@@ -40,17 +40,18 @@ for(i in 1:10){
 }
 
 # 2. run deconvolution on the simulation object
-deconv_results=run_deconv(simulation_repeats,run_linseed = T,CellTypeNumber = ncol(simulated_frac))
+deconv_results=run_deconv(simulation_repeats,run_linseed = F,CellTypeNumber = ncol(simulated_frac))
 
 # 3. evaluate the performance of each deconvolution method
 # prepare a mapping table and a mapping list to evaluate the performance
 cell_map=get_cell_map(deconv_results)
 mapping=get_mapping_list(cell_map,simulated_frac)
+
 deconv_performance_results=run_evalu(deconv_results,simulated_frac,cell_map,mapping)
 performance_table=quick_gather(deconv_performance_results,'maxcor')
 head(performance_table)
 
 # 4. visualize deconvolution results
-deconv_evalu_plot(deconv_performance_results[[1]]$homo_evalu$R$linseed)
+deconv_evalu_plot(deconv_performance_results[[1]]$homo_evalu$R$MarkerBased_CAMTHC_scranMarkers)
 
 
