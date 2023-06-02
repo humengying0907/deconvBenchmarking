@@ -5,7 +5,7 @@ This directory contains source code to reproduce the results in the manuscript H
 
 <img src="https://github.com/humengying0907/deconvBenchmarking/blob/main/images/framework.png" width=60% height=60%>
 
-# Hetergeneous bulk simulation pipeline in this study
+# Heterogeneous bulk simulation pipeline in this study
 
 <img src="https://github.com/humengying0907/deconvBenchmarking/blob/main/images/heter_pipeline.png" width=80% height=80%>
 
