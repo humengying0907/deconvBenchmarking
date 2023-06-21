@@ -1,0 +1,40 @@
+Package: deconvBenchmarking
+Title: Benchmarking deconvolution methods using bulk data simulated under various strategies
+Version: 0.1.0
+Author: Mengying Hu, Maria Chikina
+Maintainer: Mengying <mhu5304@gmail.com>
+Description: deconvBenchmarking is an R packge to benchmark different deconvolution methods using bulk data simulated under different simulation strategies. 
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Depends: 
+    R (>= 3.5.0),
+    dplyr,
+    tidyr,
+    tibble,
+    Matrix,
+    pbapply,
+    fitdistrplus,
+    gtools,
+    nnls
+Suggests: 
+    immunedeconv,
+    Biobase,
+    SCDC,
+    ggplot2,
+    viridis,
+    ggpointdensity,
+    BayesPrism,
+    limma,
+    e1071,
+    parallel,
+    preprocessCore,
+    MuSiC,
+    SingleCellExperiment,
+    LinDeconSeq,
+    EpiDISH,
+    debCAM,
+    FactoMineR,
+    GSVA,
+    linseed
