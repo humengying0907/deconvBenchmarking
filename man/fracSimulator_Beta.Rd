@@ -7,8 +7,8 @@
 fracSimulator_Beta(
   scMeta,
   n,
-  colnames_of_sample,
-  colnames_of_cellType,
+  colnames_of_sample = NA,
+  colnames_of_cellType = NA,
   fixed_cell_type = NA,
   min.frac = 0,
   showFractionPlot = T

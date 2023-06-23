@@ -41,8 +41,7 @@ bulkSimulator(
 
 \item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. Required for 'semi', 'heter', and 'SCDC' methods.}
 
-\item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods,
-and is optional for 'SCDC' method.}
+\item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods}
 
 \item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
 This argument is required for 'semi' and 'heter_sampleIDfree' methods}
@@ -62,6 +61,8 @@ when use_chunk = 'random', randomly select 50-100\% of the cells belonging to th
 \item{max.percentage}{maximum percentage of cellType fraction to generate in fraction simulation. Default = 99. This argument is only required for 'favilaco'}
 
 \item{nbulk}{number of simulated bulk samples. This argument is required for 'favilaco' and 'SCDC' methods.}
+
+\item{seed}{a seed value for 'favilaco' method. Default = 24}
 
 \item{use_simulated_frac_as_prop_mat}{a logical variable to determine whether to use 'simulated_frac' as 'prop_mat' as input for 'SCDC' method}
 
@@ -87,7 +88,7 @@ simulated_frac = fracSimulator_Beta(scMeta, n = 100,
                                     colnames_of_cellType = 'cell_type',
                                     fixed_cell_type = 'malignant')
 
-bulkSimulator(methods = c('homo', 'semi,'heter','favilaco','immunedeconv','SCDC'),
+bulkSimulator(methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
               scExpr = scExpr,
               scMeta = scMeta,
               colnames_of_cellType = 'cell_type',colnames_of_sample = 'sampleID',

@@ -51,9 +51,9 @@ deconv_regression_cibersort = function(bulk_expr,sigMatrix_list, cibersort_path 
     sigMatrix_list = sigMatrix_list[names(sigMatrix_list)!='raw']
   }
 
-  require(e1071)
-  require(parallel)
-  require(preprocessCore)
+  require(e1071,quietly = T)
+  require(parallel,quietly = T)
+  require(preprocessCore,quietly = T)
   source(paste0(cibersort_path,'/CIBERSORT.R'))
 
   quick_cbs = function(ref){
@@ -90,8 +90,8 @@ deconv_regression_cibersort = function(bulk_expr,sigMatrix_list, cibersort_path 
 #' @export
 deconv_regression_MuSiC = function(bulk_expr, sigMatrix_list, scExpr = NULL, scMeta = NULL,
                                    colnames_of_cellType = NA, colnames_of_sample = NA, normalize = F, n.core = 1){
-  require(MuSiC)
-  require(SingleCellExperiment)
+  require(MuSiC,quietly = T)
+  require(SingleCellExperiment,quietly = T)
 
   if(is.null(scExpr) | is.null(scMeta) | is.na(colnames_of_cellType) | is.na(colnames_of_sample)){
     stop('please provide required arguments to run MuSiC')
@@ -140,7 +140,7 @@ deconv_regression_wRLM = function(bulk_expr,sigMatrix_list,
                                   QN = FALSE,
                                   verbose = FALSE,
                                   n.core = 1){
-  require(LinDeconSeq)
+  require(LinDeconSeq,quietly = T)
 
   if(skip_raw == T){
     sigMatrix_list = sigMatrix_list[names(sigMatrix_list)!='raw']
@@ -175,7 +175,7 @@ deconv_regression_wRLM = function(bulk_expr,sigMatrix_list,
 #'    'RefBased_RPC_' followed by the name of the respective input signature matrix.
 #' @export
 deconv_regression_RPC = function(bulk_expr,sigMatrix_list, skip_raw = T, maxit = 100, n.core = 1){
-  require(EpiDISH)
+  require(EpiDISH,quietly = T)
 
   if(skip_raw == T){
     sigMatrix_list = sigMatrix_list[names(sigMatrix_list)!='raw']

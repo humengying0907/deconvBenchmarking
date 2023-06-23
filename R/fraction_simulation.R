@@ -22,11 +22,15 @@
 #'                    colnames_of_cellType = 'cell_type', fixed_cell_type = 'malignant')
 #' }
 fracSimulator_Beta<-function(scMeta,n,
-                             colnames_of_sample,
-                             colnames_of_cellType,
+                             colnames_of_sample = NA,
+                             colnames_of_cellType = NA,
                              fixed_cell_type = NA,
                              min.frac = 0,
                              showFractionPlot = T){
+
+  if(is.na(colnames_of_sample)|is.na(colnames_of_cellType)){
+    stop('please provide column name that corresponds to sampleID and cell_type in scMeta')
+  }
 
   ct_table=scMeta %>% group_by_(colnames_of_sample, colnames_of_cellType) %>%
     summarise(n=n()) %>%
@@ -165,7 +169,7 @@ fracSimulator_favilaco <- function(scExpr, scMeta, colnames_of_cellType = NA, nb
 #' @export
 fracSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_of_sample = NA, disease = NULL, ct.sub = NULL,
                               nbulk = 10, samplewithRep = T, prop_mat = NULL){
-  require(SCDC)
+  require(SCDC,quietly = T)
   eset = Biobase::ExpressionSet(assayData = scExpr,phenoData = new("AnnotatedDataFrame", data = scMeta))
 
   if(is.na(colnames_of_cellType)){

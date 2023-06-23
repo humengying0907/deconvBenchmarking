@@ -17,7 +17,9 @@ Depends:
     pbapply,
     fitdistrplus,
     gtools,
-    nnls
+    nnls,
+    stringr,
+    caret
 Suggests: 
     immunedeconv,
     Biobase,
@@ -37,4 +39,7 @@ Suggests:
     debCAM,
     FactoMineR,
     GSVA,
-    linseed
+    linseed,
+    data.table,
+    TCGAbiolinks,
+    InstaPrism

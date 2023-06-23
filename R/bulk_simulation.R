@@ -226,101 +226,98 @@ bulkSimulator_semi<-function(scExpr,scMeta,
 }
 
 ################### functions for heter simulation ###################
-meta_shuffle<-function(scMeta,
-                       colnames_of_cellType,
-                       colnames_of_sample){
+meta_shuffle<-function(scMeta){
+  # this function requires the columns named "sampleID" and "cell_type" are present in the "scMeta"
   scMeta_shuffled=data.frame(matrix(NA,ncol = ncol(scMeta),nrow =0))
-  cell_types=unique(scMeta[,colnames_of_cellType])
+
+  cell_types=unique(scMeta$cell_type)
+
   for (i in 1:length(cell_types)){
-    rows=which(scMeta[,colnames_of_cellType]==cell_types[i])
+    rows = which(scMeta$cell_type == cell_types[i])
+
     # replace sample labels
     meta_sub=scMeta[rows,]
-    meta_sub=meta_sub[order(meta_sub[,colnames_of_sample]),]
+    meta_sub=meta_sub[order(meta_sub$sampleID),]
 
-    unique_samples=unique(meta_sub[,colnames_of_sample])
-    a=sample(unique_samples,length(unique_samples),replace = F)
+    unique_samples=unique(meta_sub$sampleID)
+    a = sample(unique_samples,length(unique_samples),replace = F)
 
-    meta_sub[,colnames_of_sample]=rep(a,table(meta_sub[,colnames_of_sample])%>% as.numeric())
+    meta_sub$sampleID = rep(a,table(meta_sub$sampleID)%>% as.numeric())
     scMeta_shuffled=rbind(scMeta_shuffled,meta_sub)
   }
   return(scMeta_shuffled)
 }
 
-heter_aggregate<-function(ID,frac_table,scExpr,scMeta,colnames_of_cellType,
+heter_aggregate<-function(ID,simulated_frac,scExpr,scMeta,colnames_of_cellType,
                           colnames_of_sample,
-                          min_chunkSize=5,
-                          use_chunk='all'){
-  stopifnot(all.equal(rownames(scMeta),colnames(scExpr)))
+                          min_chunkSize = 5,
+                          use_chunk = 'all'){
 
-  simulated_frac=frac_table[ID,]
-  scMeta=meta_shuffle(scMeta,colnames_of_cellType,colnames_of_sample)
+  simulated_frac_row = simulated_frac[ID,]
 
-  sampleIDs=unique(scMeta[,colnames_of_sample])
-  patient_barcode=sample(sampleIDs,1)
+  # rename scMeta
+  scMeta_renamed = data.frame(row.names = rownames(scMeta),
+                              sampleID = scMeta[,colnames_of_sample],
+                              cell_type = scMeta[,colnames_of_cellType])
+  scMeta_shuffled = meta_shuffle(scMeta_renamed)
 
-  p=rownames(scMeta)[scMeta[,colnames_of_sample]==patient_barcode]
+  sampleIDs = unique(scMeta_renamed$sampleID)
+  selected_sample = sample(sampleIDs,1)
 
-  # borrow a chunk if scMeta[p,] does not have enough cell types
-  unique_cellType = unique(scMeta[,colnames_of_cellType])
-  scMeta_sub=scMeta[p,]
-  missing_cellType=unique_cellType[!unique_cellType %in% unique(scMeta_sub[,colnames_of_cellType])]
+  cellType_component = names(simulated_frac_row)[simulated_frac_row > 0]
+  scMeta_selected = subset(scMeta_shuffled, sampleID == selected_sample)
+  scMeta_selected = scMeta_selected[scMeta_selected$cell_type %in% cellType_component,]
+
+  scMeta_unselected = scMeta_shuffled[scMeta_shuffled$sampleID!=selected_sample,]
+
+  p = rownames(scMeta_selected)
+
+  chunk_size = scMeta_selected %>% group_by(cell_type) %>% summarise(n=n()) %>% deframe()
+
+
+  missing_cellType = cellType_component[!cellType_component %in% names(chunk_size)]
+
+  undersampled_cellType = names(chunk_size)[chunk_size < min_chunkSize]
+  undersampled_cellType = intersect(undersampled_cellType,cellType_component)
 
   if(length(missing_cellType)>0){
-    for (i in 1:length(missing_cellType)){
-      scMeta_borrow = scMeta[scMeta[,colnames_of_cellType]==missing_cellType[i],]
-      unique_patient = unique(scMeta_borrow[,colnames_of_sample])
-      borrow_patient = sample(unique_patient,1)
-      # change borrow_patient id to patient barcode
-      scMeta[scMeta[,colnames_of_cellType]==missing_cellType[i] & scMeta[,colnames_of_sample]==borrow_patient,colnames_of_sample]=patient_barcode
-    }
-  }
+    for(ct in missing_cellType){
+      scMeta_candidate = scMeta_unselected[scMeta_unselected$cell_type == ct,]
 
-  p=rownames(scMeta)[scMeta[,colnames_of_sample]==patient_barcode]
-
-  # combine with random chunks if scMeta[p,cell_type] has less than min_chunkSize cells
-  scMeta_sub=scMeta[p,]
-  chunk_size=scMeta_sub %>% group_by_(colnames_of_cellType) %>% summarise(n=n()) %>% deframe()
-
-  undersampled_cellType=names(chunk_size)[chunk_size<min_chunkSize]
-  if(length(undersampled_cellType)>0){
-    for (i in 1:length(undersampled_cellType)){
-      scMeta_borrow = scMeta[scMeta[,colnames_of_cellType]==undersampled_cellType[i],]
-      unique_patient = unique(scMeta_borrow[,colnames_of_sample])
-
-      n_after_borrow = chunk_size[undersampled_cellType[i]] %>% as.numeric()
-      borrow_query=0
-      while (n_after_borrow < min_chunkSize) {
-        borrow_patient = sample(unique_patient,1)
-        scMeta_borrow_patient_sub=scMeta_borrow[scMeta_borrow[,colnames_of_sample]==borrow_patient,]
-        n_after_borrow=chunk_size[undersampled_cellType[i]] %>% as.numeric()+nrow(scMeta_borrow_patient_sub) # number of chunk size after borrow
-        borrow_query=borrow_query+1
-        if(borrow_query>10){
-          stop('min_chunkSize too large: no enough cells to aggreate; use smaller chunk size threshold')
-        }
+      if(nrow(scMeta_candidate) < min_chunkSize){
+        stop('min_chunkSize too large: no enough cells to aggreate; use smaller chunk size threshold')
       }
-      scMeta[scMeta[,colnames_of_cellType]==undersampled_cellType[i] & scMeta[,colnames_of_sample]==borrow_patient,colnames_of_sample]=patient_barcode
+      p = c(p,rownames(scMeta_candidate)[1:min_chunkSize])
+
     }
   }
 
-  # final cells to use
-  p=rownames(scMeta)[scMeta[,colnames_of_sample]==patient_barcode]
+  if(length(undersampled_cellType) > 0 ){
+    for(ct in undersampled_cellType){
+      scMeta_candidate = scMeta_unselected[scMeta_unselected$cell_type == ct,]
 
-  # generate simulated expression by matrix multiplication
-  cellType <- scMeta[p,colnames_of_cellType]
-  stopifnot(length(unique(cellType))==length(unique_cellType))
-  group = list()
-  for(i in unique(cellType)){
-    group[[i]] <- p[which(cellType %in% i)]
+      patch_n = min_chunkSize - chunk_size[ct] %>% as.numeric()
+
+      if(nrow(scMeta_candidate) < patch_n){
+        stop('min_chunkSize too large: no enough cells to aggreate; use smaller chunk size threshold')
+      }
+      p = c(p,rownames(scMeta_candidate)[1:patch_n])
+    }
   }
-  if(use_chunk=='all'){
-    # use all cells
-    X = scExpr[,p]
-    C = lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F]))
-    C = do.call(cbind, C)
-    E = C %*% matrix(simulated_frac[colnames(C)],ncol = 1)
 
+
+  scMeta_final = scMeta[p,]
+  group = list()
+  for(ct in cellType_component){
+    group[[ct]] <- rownames(scMeta_final)[scMeta_final$cell_type == ct]
+  }
+
+  if(use_chunk=='all'){
+    X = scExpr[,p]
+    C = do.call(cbind,lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F])))
+    E = C %*% matrix(simulated_frac_row[colnames(C)],ncol = 1)
   }else if(use_chunk=='random'){
-    # randomly select 50%-100% cells
+    # randomly select 50%-100% cells in a chunk
     quick_select=function(cell_barcodes){
       percent=sample(seq(50,100),size = 1)
       selected=sample(cell_barcodes,size = ceiling(length(cell_barcodes)*percent*0.01))
@@ -328,13 +325,10 @@ heter_aggregate<-function(ID,frac_table,scExpr,scMeta,colnames_of_cellType,
     }
     group=lapply(group,quick_select)
     X = scExpr[,do.call(c,group)]
-    C = lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F]))
-    C = do.call(cbind, C)
-    E = C %*% matrix(simulated_frac[colnames(C)],ncol = 1)
+    C = do.call(cbind,lapply(group,function(x) Matrix::rowMeans(X[,x,drop=F])))
+    E = C %*% matrix(simulated_frac_row[colnames(C)],ncol = 1)
   }
-
   E=apply(E,2,function(x)((x/sum(x))*1e+06))
-
   return(E)
 }
 
@@ -378,7 +372,6 @@ bulkSimulator_heter<-function(scExpr,scMeta,
 
   cell_type_labels=scMeta[,colnames_of_cellType]
   stopifnot(all(colnames(simulated_frac) %in% unique(cell_type_labels)))
-
 
 
   pboptions(type = "txt", style = 3, char = "=")
@@ -536,8 +529,8 @@ bulkSimulator_favilaco = function(scExpr, scMeta, colnames_of_cellType = NA, nbu
 #' @return a list containing the simulated bulk expression and its associated simulated fraction matrix
 #' @export
 bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA , simulated_frac = NULL, n_cells = 500){
-  require(immunedeconv)
-  require(Biobase)
+  require(immunedeconv, quietly = T)
+  require(Biobase, quietly = T)
   stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
 
   if(is.na(colnames_of_cellType)){
@@ -581,7 +574,7 @@ bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA 
 #' @export
 bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_of_sample = NA, disease = NULL, ct.sub = NULL, prop_mat = NULL,
                           nbulk = 10, samplewithRep = T){
-  require(SCDC)
+  require(SCDC, quietly = T)
   eset = Biobase::ExpressionSet(assayData = scExpr,phenoData = new("AnnotatedDataFrame", data = scMeta))
 
   if(is.na(colnames_of_cellType)){
@@ -630,8 +623,7 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #' @param colnames_of_cellType column name that corresponds to cellType in scMeta
 #' @param colnames_of_cellState column name that corresponds to cellState in scMeta, where cellState contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
 #' @param colnames_of_sample column name that corresponds to sampleID in scMeta. Required for 'semi', 'heter', and 'SCDC' methods.
-#' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods,
-#'    and is optional for 'SCDC' method.
+#' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods
 #' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
 #'     This argument is required for 'semi' and 'heter_sampleIDfree' methods
 #' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods
@@ -643,6 +635,7 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #' @param min.percentage minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'
 #' @param max.percentage maximum percentage of cellType fraction to generate in fraction simulation. Default = 99. This argument is only required for 'favilaco'
 #' @param nbulk number of simulated bulk samples. This argument is required for 'favilaco' and 'SCDC' methods.
+#' @param seed a seed value for 'favilaco' method. Default = 24
 #' @param use_simulated_frac_as_prop_mat a logical variable to determine whether to use 'simulated_frac' as 'prop_mat' as input for 'SCDC' method
 #' @param disease indicate the health condition of subjects. This argument is only required for 'SCDC' method.
 #' @param ct.sub a subset of cell types that are selected to construct pseudo bulk samples. If NULL, then all cell types are used. This argument is only required for 'SCDC' method.
@@ -660,7 +653,7 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #'                                     colnames_of_cellType = 'cell_type',
 #'                                     fixed_cell_type = 'malignant')
 #'
-#' bulkSimulator(methods = c('homo', 'semi,'heter','favilaco','immunedeconv','SCDC'),
+#' bulkSimulator(methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
 #'               scExpr = scExpr,
 #'               scMeta = scMeta,
 #'               colnames_of_cellType = 'cell_type',colnames_of_sample = 'sampleID',

@@ -7,7 +7,7 @@
 #' @return a matrix of deconvolution results with cell types in rows and samples in columns
 #' @export
 deconv_refFree_linseed = function(bulk_expr,k){
-  require(linseed)
+  require(linseed,quietly = T)
   l <- LinseedObject$new(bulk_expr)
   l$calculatePairwiseLinearity()
   l$calculateSpearmanCorrelation()
@@ -51,7 +51,7 @@ deconv_refFree_debCAM = function(bulk_expr, k, corner.strategy = 2, dim.rdc = 10
                                  lof.thres = 0.02, quickhull = TRUE, quick.select = NULL,
                                  sample.weight = NULL, appro3 = TRUE, generalNMF = FALSE,
                                  cores = NULL){
-  require(debCAM)
+  require(debCAM,quietly = T)
 
   rCAM=debCAM::CAM(bulk_expr, K = k, corner.strategy, dim.rdc,
                    thres.low, thres.high, cluster.method, cluster.num, MG.num.thres,

@@ -183,3 +183,25 @@ list_deconv_refFree = function(show_description = F){
 }
 
 
+#' List available deconvolution methods using Bayesian framework
+#'
+#' @param show_description a logical variable to determine whether to show full description of each method
+#'
+#' @return a dataframe of available Bayesian-based deconvolution methods along with the corresponding function names to execute these methods.
+#' @export
+#'
+#' @examples
+#' list_deconv_Bayesian()
+list_deconv_Bayesian = function(show_description = F){
+  if(show_description == T){
+    l = data.frame(method = 'InstaPrism',
+                   function_to_call = 'deconv_Bayesian_InstaPrism',
+                   description = 'Bayesian-based deconvolution with InstaPrism')
+  }else if(show_description == F){
+    l = data.frame(method = 'InstaPrism',
+                   function_to_call = 'deconv_Bayesian_InstaPrism')
+  }
+  return(l)
+}
+
+

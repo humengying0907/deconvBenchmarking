@@ -206,7 +206,7 @@ pre_refMatrix_autogeneS <- function(scExpr, cell_type_labels, hv_genes = NULL, m
   C = C[hv_genes,]
 
   if(display_autogeneS_command ==T){
-    cat('paste the following code into the command line to construct signature matrix with autogeneS; refMatrix_autogeneS.py can be found at https://github.com/humengying0907/deconvBenchmarking/scripts \n')
+    cat('paste the following code into the command line to construct signature matrix with autogeneS; refMatrix_autogeneS.py can be found at https://github.com/humengying0907/deconvBenchmarking/tree/main/scripts \n')
     print(paste('python refMatrix_autogeneS.py','--input_dir autogeneS_input','--ngen',ngen,'--seed', seed,'--nfeatures', nfeatures,'--mode', mode))
   }
 

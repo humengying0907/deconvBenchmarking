@@ -80,7 +80,7 @@ refMarkers_limma <-function(scExpr, cell_type_labels, hv_genes=NULL,
   }else{
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]
   }
-  require(limma)
+  require(limma, quietly = T)
   limma_statistics = get_limma_statistics(scExpr,cell_type_labels,hv_genes)
   limma_markers = get_limma_markers(limma_statistics, log2FC, log2FC_flexible, minimum_n,maximum_n)
   return(limma_markers)
@@ -166,8 +166,8 @@ refMarkers_scran <- function(scExpr,cell_type_labels,cell_state_labels = NULL,hv
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]
   }
 
-  require(BayesPrism)
-  require(scran)
+  require(BayesPrism, quietly = T)
+  require(scran, quietly = T)
 
   scran_statistics = get_scran_statistics(scExpr,cell_type_labels,cell_state_labels,hv_genes)
   scran_markers = get_scran_markers(scran_statistics, log2FC, log2FC_flexible, minimum_n, maximum_n)
@@ -183,7 +183,7 @@ refMarkers_scran <- function(scExpr,cell_type_labels,cell_state_labels = NULL,hv
 #' @return a list of markers obtained from different input signature matrices. Each list element is named after the corresponding signature matrix used to generate the markers.
 #' @export
 refMarkers_sigMatrixList = function(sigMatrixList,maximum_n = 50){
-  require(debCAM)
+  require(debCAM, quietly = T)
 
   marker_list = list()
   for(name in names(sigMatrixList)){
