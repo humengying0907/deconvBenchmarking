@@ -72,6 +72,7 @@ deconv_Bayesian_InstaPrism = function(bulk_expr,
   if(is.na(key)){
     cell.types.to.update = unique(cell_type_labels)
   }else{
+    cell.types.to.update = unique(cell_type_labels)
     cell.types.to.update = cell.types.to.update[cell.types.to.update!=key]
   }
 
