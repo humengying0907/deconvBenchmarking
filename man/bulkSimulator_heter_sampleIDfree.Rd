@@ -8,10 +8,11 @@ bulkSimulator_heter_sampleIDfree(
   scExpr,
   scMeta,
   colnames_of_cellType = NA,
-  colnames_of_cellState = NA,
+  colnames_of_subcluster = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
-  dirichlet_cs_par = 0.1
+  dirichlet_cs_par = 0.1,
+  min.subcluster.size = 20
 )
 }
 \arguments{
@@ -21,13 +22,16 @@ bulkSimulator_heter_sampleIDfree(
 
 \item{colnames_of_cellType}{column name that corresponds to cellType in scMeta}
 
-\item{colnames_of_cellState}{column name that corresponds to cellState in scMeta, where cellState contains sub-clustering information for each cellType}
+\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
+Set to NA if subclustering information is not available; the function will then generate subclustering information automatically}
 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns}
 
 \item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types}
 
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1}
+
+\item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20}
 }
 \value{
 a list containing the simulated bulk expression and its associated simulated fraction matrix

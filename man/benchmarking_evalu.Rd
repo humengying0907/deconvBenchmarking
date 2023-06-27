@@ -22,13 +22,20 @@ This function evaluates deconvolution performance on the deconvResults_obj retur
 # first create a benchmarking_obj using benchmarking_init():
 benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   scMeta = scMeta,
-                  fixed_cell_type = 'malignant',
-                  bulkSimulator_methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
+
                   colnames_of_cellType = 'cell_type',
                   colnames_of_sample = 'sampleID',
 
-                  # argument for semi bulk simulation method
+                  # argument for fracSimulator_Beta()
+                  fixed_cell_type = 'malignant',
+
+                  # arguments for bulk simulation
+                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+
+                  # argument for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
+                  dirichlet_cs_par = 0.1,
+                  min.subcluster.size = 20,
 
                   # argument for marker constructions
                   refMarkers_methods = c('limma','scran'),
@@ -39,9 +46,14 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   # arguments to include tcga
                   include_tcga = T,
                   tcga_abbreviation = 'SKCM',
-                  purity_method = 'CPE',
+                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
 
-                  n.core = 4)
+                  # export files for autogeneS and cibersortx
+                  create_autogeneS_input = T,
+                  create_cibersortx_input = T
+
+                  n.core = 4
+                  )
 
 # perform deconvolution on the benchmarking_obj using all categories of deconvolution methods, which includes:
 # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'

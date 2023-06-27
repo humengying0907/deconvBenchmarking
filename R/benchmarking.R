@@ -1,96 +1,165 @@
 
-create_train_test_splitting<-function(scMeta, colnames_of_cellType, training_ratio = 0.5){
-  scMeta_summary = scMeta %>% group_by_(colnames_of_cellType) %>%
-    summarise(n=n()) %>% as.data.frame()
+#' Training/testing cells splitting
+#'
+#' @param scMeta single cell annotation file with cells as rownames
+#' @param colnames_of_cellType column name that corresponds to cellType in scMeta
+#' @param colnames_of_sample column name that corresponds to sampleID in scMeta
+#' @param training_ratio a numeric value indicating ratio of training cells. Default = 0.5
+#' @param split_by a string vector indicating how to split training and testing cells. Available options includes 'cell' and 'sample'.
+#'    When split_by = 'cell', for each cell type, a pre-defined ratio of cells will be sampled as training cells. When split = 'sample',
+#'    a pre-defined ratio of samples will be sampled as training samples, and all the cells associated will become training cells.
+#'
+#' @return a list of training cells and testing cells
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#'# when splitting by cells
+#'create_train_test_splitting(scMeta = scMeta, colnames_of_cellType = 'cell_type',
+#'                            training_ratio = 0.5, split_by = 'cell')
+#'
+#'# when splitting by samples
+#'create_train_test_splitting(scMeta = scMeta, colnames_of_sample = 'sampleID',
+#'                            training_ratio = 0.5, split_by = 'sample')
+#'}
+create_train_test_splitting<-function(scMeta,
+                                      colnames_of_cellType = NA,
+                                      colnames_of_sample = NA,
+                                      training_ratio = 0.5,
+                                      split_by = 'sample'){
 
-  scMeta_summary$training_n = ceiling(scMeta_summary$n * training_ratio)
-  cell_types = unique(scMeta[,colnames_of_cellType])
+  if(split_by =='cell'){
+    if(is.na(colnames_of_cellType)){
+      stop('please provide "colnames_of_cellType" argument when split_by = "cell"')
+    }
 
-  training_cells = c()
-  for(i in 1:nrow(scMeta_summary)){
-    cell_names = rownames(scMeta)[scMeta[,colnames_of_cellType] == scMeta_summary[i,1]]
-    training_cells = c(training_cells,sample(cell_names,size = scMeta_summary[i,'training_n'],replace = F))
+    scMeta_summary = scMeta %>% group_by_(colnames_of_cellType) %>%
+      summarise(n=n()) %>% as.data.frame()
+
+    scMeta_summary$training_n = ceiling(scMeta_summary$n * training_ratio)
+    cell_types = unique(scMeta[,colnames_of_cellType])
+
+    training_cells = c()
+    for(i in 1:nrow(scMeta_summary)){
+      cell_names = rownames(scMeta)[scMeta[,colnames_of_cellType] == scMeta_summary[i,1]]
+      training_cells = c(training_cells,sample(cell_names,size = scMeta_summary[i,'training_n'],replace = F))
+    }
+
+    testing_cells = rownames(scMeta)[!rownames(scMeta) %in% training_cells]
+
+    splitting_list=list()
+    splitting_list[['training_cells']]=training_cells
+    splitting_list[['testing_cells']]=testing_cells
+  }else if(split_by == 'sample'){
+    if(is.na(colnames_of_sample)){
+      stop('please provide "colnames_of_sample" argument when split_by = "sample"')
+    }
+
+    unique_samples = unique(scMeta[,colnames_of_sample])
+    training_samples = sample(unique_samples, size= ceiling(length(unique_samples)*training_ratio),replace = F)
+    training_cells = rownames(scMeta)[scMeta[,colnames_of_sample] %in% training_samples]
+    testing_cells = rownames(scMeta)[!rownames(scMeta) %in% training_cells]
+
+    splitting_list=list()
+    splitting_list[['training_cells']]=training_cells
+    splitting_list[['testing_cells']]=testing_cells
+  }else{
+    stop('Invalid split_by argument provided')
   }
-
-  testing_cells = rownames(scMeta)[!rownames(scMeta) %in% training_cells]
-
-  splitting_list=list()
-  splitting_list[['training_cells']]=training_cells
-  splitting_list[['testing_cells']]=testing_cells
-
   return(splitting_list)
 }
 
 #' Create an object for deconvolution benchmarking
 #' @description This function takes scRNA profile as input and generate an object intended for future deconvolution benchmarking.
+#'
+#' @param scExpr single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns
+#' @param scMeta a dataframe that stores annotation info of each cells
+#' @param colnames_of_cellType column name that corresponds to cellType in scMeta.
+#' @param colnames_of_sample column name that corresponds to sampleID in scMeta. This argument is required for 'semi', 'heter', and 'SCDC' bulk simulation methods;
+#'    this argument is also required when split_by = 'sample'
+#'
+#' @param nbulk number of simulated bulk samples. This argument is required when simulated_frac is not available; in this case, the function
+#'    will generate simulated_frac automatically using fracSimulator_Beta() with the nbulk argument.
+#' @param fixed_cell_type argument for fracSimulator_Beta() function,  this argument will be called required when simulated_frac is not available.
+#'    It denotes a character denotes the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
+#'    to the name of the malignant cell types. If left undefined, the fracSimulator_Beta() will automatically select the most abundant cell type as 'fixed_cell_type'.
+#'
+#' @param training_ratio ratio of training cells. Default = 0.5
+#' @param split_by a string vector indicating how to split training and testing cells. Available options includes 'cell' and 'sample'.
+#'    When split_by = 'cell', for each cell type, a pre-defined ratio of cells will be sampled as training cells. When split = 'sample',
+#'    a pre-defined ratio of samples will be sampled as training samples, and all the cells associated will become training cells.
+#'
+#' @param bulkSimulator_methods a character vector indicating which bulk simulation methods to use. Use list_bulkSimulator() to check for available method names.
+#'    Set to NULL if no bulk simulation is needed.
+#' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
+#'    This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will generate subclustering information automatically
+#' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. If set to NULL, the function will generate simulated_frac automatically
+#'    using 'nbulk' and 'fixed_cell_type' arguments.
+#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
+#'     This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods
+#' @param dirichlet_cs_par a numeric value determine the dispersion level of subclusters. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' simulation method only.
+#' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.
+#'
+#' @param refMarkers_methods a character vector specifying the desired methods for generating cell-type specific markers. Use list_refMarkers() to check for available method names.
+#' @param colnames_of_cellState column name that corresponds to the cellState in scMeta. This argument is only required for scran-based marker identification,
+#'    where the differential expression (DE) analysis is performed between every pair of cell states from different cell types. Set this parameter to NA if the information is not available.
+#'    In that case, the function will treat all cells from the same cell type identically.
+#'
+#' @param refMatrix_methods a character vector specifying the desired methods for generating signature matrices. Use list_refMarix() to check for available method names.
+#'
+#' @param include_tcga a logicial variable determining whether to include tcga in the output object. If True, the function will download associated TCGA cohort from xnea browser
+#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
+#' @param purity_methods a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
+#'    Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE', Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE')
+#'
+#' @param create_autogeneS_input a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
+#'    will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters
+#' @param autogeneS_input_file_name desired file name to save input data for autogeneS
+#' @param create_cibersortx_input a logical variable determine whether to create input data for cibersortx, which is a web-server to construct signature matrix. If true, the function will
+#'    automatically export the input data in 'cibersortx_input' folder
+#' @param cibersortx_input_file_name desired file name to save input data for cibersortx
+#' @param n.core number of cores to use for parallel programming. Default = 1
+#' @param ... additional arguments to be passed to the following functions: bulkSimulator(), refMarkers(), refMatrix(),
+#'    pre_refMatrix_autogeneS() and pre_refMatrix_cibersortx()
+#'
+#'
+#'
+#' @details
+#' This function takes scRNA profile as input and generate an object intended for future deconvolution benchmarking.
 #'    The function performs the following steps: (1) It divides the cells into training and testing cells;
 #'    (2) the training cells are utilized to generate reference profiles, such as markers and signature matrices;
 #'    (3) the testing cells are used to generate simulated bulk expression, which is then employed for deconvolution purposes;
 #'    (4) additionally, this function offers the flexibility to include a TCGA cohort as part of the object for future deconvolution benchmarking
 #'
-#' @param scExpr single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns
-#' @param scMeta a dataframe that stores annotation info of each cells
+#' @section Training/testing splitting:
+#' This function first splits the cells into training cells and testing cells using \code{\link{create_train_test_splitting}}. Important parameters
+#' controlling how the dataset is splitted including:
+#' \itemize{
+#' \item \code{training_ratio}, which specifies the percentage of cells used as training cells
+#' \item \code{split_by}, which determines whether to split the cells randomly or constrained on samples
+#' }
 #'
-#' @param fixed_cell_type argument for fracSimulator_Beta() function: a character denotes the target cell type for which we strive to faithfully preserve its distribution.
-#'    It is recommended to set this parameter to the name of the malignant cell types. If left undefined, the function will automatically
-#'    select the most abundant cell type as 'fixed_cell_type'.
-#' @param min.frac fracSimulator_Beta() argument: minimum fraction in the simulated fraction, values below this threshold will be set to zero. Default = 0.01
-#' @param showFractionPlot fracSimulator_Beta() argument: a logical variable determining whether to display simulated fraction distribution for the fixed_cell_type
+#' @section Reference profiles from training cells:
+#' Training cells generated from splitting step will be utilized to generate reference profiles, such as markers and signature matrices. Specifically,
+#' the exported \code{marker_list} in the function output is generated from \code{\link{refMarkers}}, and the exported \code{sigMarix_list} is
+#' generated using \code{\link{refMatrix}}. Important parameters in reference construction including:
+#' \itemize{
+#' \item \code{refMarkers_methods}
+#' \item \code{refMatrix_methods}
+#' }
+#' Set the above parameters to NULL if the associated reference profiles is not needed.
 #'
-#' @param training_ratio ratio of training cells. Default = 0.5
+#' @section Bulk simulation using testing cells:
+#' Testing cells are used to generate simulated bulk expression using \code{\link{bulkSimulator}}. By default \code{bulkSimulator()} requires a pre-defined
+#' fraction matrix \code{simulated_frac} determining cellular proportions to be aggregated. When \code{simulated_frac} is not available, the
+#' function will generate a \code{simulated_frac} automatically using \code{\link{fracSimulator_Beta}}. Important parameters in bulk simulation including:
+#' \itemize{
+#' \item \code{bulkSimulator_methods}, which specifies which bulk simulation strategies to use
+#' }
 #'
-#' @param bulkSimulator_methods bulkSimulator() argument: a character vector indicating which bulk simulation methods to use. Use list_bulkSimulator() to check for available method names.
-#' @param colnames_of_cellType column name that corresponds to cellType in scMeta
-#' @param colnames_of_cellState column name that corresponds to cellState in scMeta, where cellState contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
-#' @param colnames_of_sample column name that corresponds to sampleID in scMeta. Required for 'semi', 'heter', and 'SCDC' methods.
-#' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods
-#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
-#'     This argument is required for 'semi' and 'heter_sampleIDfree' methods
-#' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods
-#' @param min_chunkSize minimum number of cells to aggregate to construct a given cell-type component in the simulated bulk. This is an argument required for 'semi' and 'heter' methods
-#' @param use_chunk a character indicating which cells to pool together for the a given cell_type. Default='all' other options include 'random'.
-#'    When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
-#'    when use_chunk = 'random', randomly select 50-100% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods
-#' @param dirichlet_cs_par a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' method.
-#' @param min.percentage minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'
-#' @param max.percentage maximum percentage of cellType fraction to generate in fraction simulation. Default = 99. This argument is only required for 'favilaco'
-#' @param nbulk number of simulated bulk samples. This argument is required for 'favilaco' and 'SCDC' methods.
-#' @param seed a seed value for 'favilaco' method. Default = 24
-#' @param use_simulated_frac_as_prop_mat a logical variable to determine whether to use 'simulated_frac' as 'prop_mat' as input for 'SCDC' method
-#' @param disease indicate the health condition of subjects. This argument is only required for 'SCDC' method.
-#' @param ct.sub a subset of cell types that are selected to construct pseudo bulk samples. If NULL, then all cell types are used. This argument is only required for 'SCDC' method.
-#' @param samplewithRep logical, randomly sample single cells with replacement. Default is T. This argument is only required for 'SCDC' method.
-#' @param refMarkers_methods a character vector specifying the desired methods for generating cell-type specific markers. Use list_refMarkers() to check for available method names.
-#' @param hv_genes a character vector containing the names of high-variable genes. scExpr will be pre-filtered based on the provided hv_genes to reduce computation time during the differential expression (DE) analysis.
-#'    If set to NULL, the function will automatically select genes with specificity score passing 'max.spec_cutoff_for_DE' threshold as hv_genes
-#' @param log2FC log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.
-#' @param log2FC_flexible a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-#'    all the genes that pass the threshold will be considered as marker genes.
-#' @param minimum_n minimum number of marker genes for a cell-type
-#' @param maximum_n maximum number of marker genes of a cell-type
-#' @param max.spec_cutoff_for_DE specificity score threshold to select for hv_genes. Default = 0.3
-#' @param sigMatrixList a list of signature matices to derive markers from. This argument is required for 'sigMatrixList' method
-#' @param refMatrix_methods a character vector specifying the desired methods for generating signature matrices. Use list_refMarix() to check for available method names.
-#' @param markerList a list of pre-calculated cell-type marker list, where the first level of this list represents different methods used to derive cell-type specific markers, and the second level
-#'    comprises the actual cell-type specific genes identified by each method. This argument is required for 'markerList' method
-#' @param include_tcga a logicial variable determining whether to include tcga in the output object
-#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
-#' @param purity_method tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-#'    Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE', Default = 'CPE'
-#' @param create_autogeneS_input a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix
-#' @param max.spec_cutoff_for_autogeneS specificity score threshold to select for hv_genes. Default = 0.5
-#' @param autogeneS_input_file_name desired file name to save the processed file
-#' @param display_autogeneS_command a logical variable indicating whether to display the command lines to run autogeneS. By pasting the generated code into the command line, an external Python file will be executed,
-#'    which will return the generated signature matrices in the 'autogeneS_output' folder.
-#' @param ngen a numeric variable indicating number of generations used in autogeneS
-#' @param seed_autogeneS autogeneS seed argument. Default = 0
-#' @param nfeatures autogeneS nfeatures argument. Default = 400
-#' @param mode autogeneS mode argument. Default = 'fixed'
-#' @param create_cibersortx_input a logical variable determine whether to create input data for cibersortx, which is a web-server to construct signature matrix
-#' @param downsample a logical variable indicating whether to downsample the processed file of not. This argument is useful when the processed file exceeds the storage limit for the cibersortx server
-#' @param downsample_ratio a numeric value indicating downsampling ratio. This argument determines the fraction of the original size that will be retained in the downsampling process
-#' @param cibersortx_input_file_name desired file name to save the processed file
-#' @param n.core number of cores to use for parallel programming. Default = 1
+#' @section Export files for autogeneS and cibersortx:
+#' This function also provides the option to prepare input for autogeneS and cibersortx using the training cells. For details about the preparation steps and additional arguments associated,
+#' check \code{\link{pre_refMatrix_autogeneS}} and \code{\link{pre_refMatrix_cibersortx}}.
 #'
 #' @return a list containing the following elements: 1) a list of training/testing cells; 2) a list of simulated bulk object and/or tcga expression;
 #'    3) a list of cell-type specific markers; 4) a list of signature matrices
@@ -101,13 +170,24 @@ create_train_test_splitting<-function(scMeta, colnames_of_cellType, training_rat
 #' # a standard benchmarking pipeline
 #' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
-#'                   fixed_cell_type = 'malignant',
-#'                   bulkSimulator_methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
 #'
-#'                   # argument for semi bulk simulation method
+#'                   # argument for fracSimulator_Beta()
+#'                   nbulk = 100,
+#'                   fixed_cell_type = 'malignant',
+#'
+#'                   # argument for training/testing splitting:
+#'                   training_ratio = 0.5,
+#'                   split_by = "cell",
+#'
+#'                   # arguments for bulk simulation
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'
+#'                   # argument for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'                   dirichlet_cs_par = 0.1,
+#'                   min.subcluster.size = 20,
 #'
 #'                   # argument for marker constructions
 #'                   refMarkers_methods = c('limma','scran'),
@@ -118,7 +198,7 @@ create_train_test_splitting<-function(scMeta, colnames_of_cellType, training_rat
 #'                   # arguments to include tcga
 #'                   include_tcga = T,
 #'                   tcga_abbreviation = 'SKCM',
-#'                   purity_method = 'CPE',
+#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
 #'
 #'                   # export files for autogeneS and cibersortx
 #'                   create_autogeneS_input = T,
@@ -131,7 +211,13 @@ create_train_test_splitting<-function(scMeta, colnames_of_cellType, training_rat
 #' # and use all the single cells to generate reference markers and signature matrices
 #' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
+#'                   colnames_of_cellType = 'cell_type',
+#'                   colnames_of_sample = 'sampleID',
+#'
+#'                   # use all cells to build scRNA reference
 #'                   training_ratio = 1,
+#'
+#'                   # set bulkSimulator_methods to NULL to disable bulk simulation
 #'                   bulkSimulator_methods = NULL,
 #'
 #'                   # argument for marker constructions
@@ -143,81 +229,91 @@ create_train_test_splitting<-function(scMeta, colnames_of_cellType, training_rat
 #'                   # arguments to include tcga
 #'                   include_tcga = T,
 #'                   tcga_abbreviation = 'SKCM',
-#'                   purity_method = 'CPE'
+#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE')
 #'                   )
 #' }
 benchmarking_init = function(scExpr,scMeta,
 
+                             # arguments required in multiple steps
+                             colnames_of_cellType = NA,
+                             colnames_of_sample = NA,
+
                              # arguments for fracSimulator_Beta()
+                             nbulk = 100,
                              fixed_cell_type = NA,
-                             min.frac = 0.01,
-                             showFractionPlot = T,
 
                              # arguments for create_train_test_splitting()
                              training_ratio = 0.5,
+                             split_by = 'cell',
 
                              # arguments for bulkSimulator()
                              bulkSimulator_methods = NULL,
-                             colnames_of_cellType = NA,
-                             colnames_of_cellState = NA,
-                             colnames_of_sample = NA,
+                             colnames_of_subcluster = NA,
                              simulated_frac = NULL,
                              heter_cell_type = NA,
-                             ncells_perSample = 500,
-                             min_chunkSize = 5,
-                             use_chunk = "all",
                              dirichlet_cs_par = 0.1,
-                             min.percentage = 1,
-                             max.percentage = 99,
-                             nbulk = 100,
-                             seed = 24,
-                             use_simulated_frac_as_prop_mat = FALSE,
-                             disease = NULL,
-                             ct.sub = NULL,
-                             samplewithRep = TRUE,
+                             min.subcluster.size = 20,
 
                              # arguments for refMarkers
                              refMarkers_methods = c('limma','scran'),
-                             hv_genes = NULL,
-                             log2FC = 2,
-                             log2FC_flexible = 1,
-                             minimum_n = 15,
-                             maximum_n = 50,
-                             max.spec_cutoff_for_DE = 0.3,
-                             sigMatrixList = NULL,
+                             colnames_of_cellState = NA,
 
                              # arguments for refMatrix
                              refMatrix_methods = c('raw','limma','scran'),
-                             markerList = NULL,
 
                              # arguments for including TCGA as part of evaluation
                              include_tcga = F,
                              tcga_abbreviation = NA,
-                             purity_method = 'CPE',
+                             purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
 
                              # arguments for pre_refMatrix_autogeneS
                              create_autogeneS_input = F,
-                             max.spec_cutoff_for_autogeneS = 0.5,
                              autogeneS_input_file_name = NULL,
-                             display_autogeneS_command = T,
-                             ngen = 5000,
-                             seed_autogeneS = 0,
-                             nfeatures = 400,
-                             mode = "fixed",
 
                              # arguments for pre_refMatrix_cibersortx
                              create_cibersortx_input = F,
-                             downsample = F,
-                             downsample_ratio = 0.2,
                              cibersortx_input_file_name = NULL,
 
-                             n.core = 1
+                             n.core = 1,
+                             ...
 ){
+
+  arg_list = list(...)
+  fracSimulator_Beta_args = arg_list[names(arg_list) %in% c('min.frac','showFractionPlot')]
+  bulkSimulator_args = arg_list[names(arg_list) %in% c('ncells_perSample','min_chunkSize','use_chunk','min.percentage','max.percentage',
+                                                       'seed','use_simulated_frac_as_prop_mat','disease','ct.sub','samplewithRep')]
+  refMarkers_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','log2FC_flexible','minimum_n','maximum_n','spec_cutoff_for_DE','sigMatrixList')]
+  refMatrix_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','log2FC_flexible','minimum_n','maximum_n','spec_cutoff_for_DE','markerList ')]
+  pre_refMatrix_autogeneS_args = arg_list[names(arg_list) %in% c('hv_genes','max.spec_cutoff_for_autogeneS','display_autogeneS_command','ngen',
+                                                                 'seed','nfeatures','mode')]
+  pre_refMatrix_cibersortx_args = arg_list[names(arg_list) %in% c('downsample','downsample_ratio')]
+
   benchmarking_obj = list()
 
-  # split scRNA into training and testing
-  splitting = create_train_test_splitting(scMeta, colnames_of_cellType, training_ratio)
+  message('split scRNA into training and testing')
+  splitting = create_train_test_splitting(scMeta, colnames_of_cellType, colnames_of_sample,
+                                          training_ratio, split_by)
 
+  # in case that training_cells and testing_cells belong to non-identical cell_types,
+  # which may occur when certain cell_types are only present in a limited number of samples
+
+  scMeta_train = scMeta[splitting$training_cells,]
+  scMeta_test = scMeta[splitting$testing_cells,]
+
+  overlapped_celltypes = intersect(scMeta_train[,colnames_of_cellType],
+                                   scMeta_test[,colnames_of_cellType])
+
+  # reorganize scMeta and scExpr using overlapped_celltypes
+  scMeta_renamed = data.frame(row.names = rownames(scMeta),
+                              sampleID = scMeta[,colnames_of_sample],
+                              cell_type = scMeta[,colnames_of_cellType])
+
+  scMeta_renamed = scMeta_renamed[scMeta_renamed$cell_type %in% overlapped_celltypes,]
+
+  splitting$training_cells = splitting$training_cells[splitting$training_cells %in% rownames(scMeta_renamed)]
+  splitting$testing_cells = splitting$testing_cells[splitting$testing_cells %in% rownames(scMeta_renamed)]
+
+  # make training and testing profiles
   scExpr_train = scExpr[,splitting$training_cells]
   scMeta_train = scMeta[splitting$training_cells,]
 
@@ -236,133 +332,115 @@ benchmarking_init = function(scExpr,scMeta,
     cell_state_labels_train = scMeta_train[,colnames_of_cellState]
   }
 
-  # generate a list of bulk simulation objects using testing scRNA
   if(!is.null(bulkSimulator_methods)){
 
-    # Simulate realistic cell-type fractions from beta distribution
     if(is.null(simulated_frac)){
-      simulated_frac = fracSimulator_Beta(scMeta,
-                                          n = nbulk,
-                                          colnames_of_sample,
-                                          colnames_of_cellType,
-                                          fixed_cell_type,
-                                          min.frac,
-                                          showFractionPlot)
+      message('simulate realistic cell-type fractions')
+
+      simulated_frac = do.call(fracSimulator_Beta,c(list(scMeta = scMeta_renamed,
+                                                         n = nbulk,
+                                                         colnames_of_sample  = 'sampleID',
+                                                         colnames_of_cellType  = 'cell_type',
+                                                         fixed_cell_type = fixed_cell_type),
+                                                    fracSimulator_Beta_args))
+
+
+      cat('\n')
     }
 
-    bulk_simulation_obj = bulkSimulator(bulkSimulator_methods,
-                                        scExpr_test,
-                                        scMeta_test,
-                                        colnames_of_cellType,
-                                        colnames_of_cellState,
-                                        colnames_of_sample,
-                                        simulated_frac,
-                                        heter_cell_type,
-                                        ncells_perSample,
-                                        min_chunkSize,
-                                        use_chunk,
-                                        dirichlet_cs_par,
-                                        min.percentage,
-                                        max.percentage,
-                                        nbulk,
-                                        seed,
-                                        use_simulated_frac_as_prop_mat,
-                                        disease,
-                                        ct.sub,
-                                        samplewithRep,
-                                        n.core)
+    message('generate a list of bulk simulation objects using testing scRNA')
+    bulk_simulation_obj = do.call(bulkSimulator,c(list(methods = bulkSimulator_methods,
+                                                       scExpr = scExpr_test,
+                                                       scMeta = scMeta_test,
+                                                       colnames_of_cellType = colnames_of_cellType,
+                                                       colnames_of_subcluster = colnames_of_subcluster,
+                                                       colnames_of_sample = colnames_of_sample,
+                                                       simulated_frac = simulated_frac,
+                                                       heter_cell_type  = heter_cell_type,
+                                                       dirichlet_cs_par = dirichlet_cs_par ,
+                                                       min.subcluster.size = min.subcluster.size,
+                                                       nbulk = nbulk,
+                                                       n.core = n.core),
+                                                  bulkSimulator_args))
+
+
+    cat('\n')
+
   }else{
     bulk_simulation_obj = list()
   }
 
-  # include TCGA in the bulk object for further evaluation
   if(include_tcga == T){
-    if(is.na(tcga_abbreviation)){
-      stop('Please provide the TCGA cohort abbreviation, such as "SKCM", to specifically include this cohort in the bulk object')
-    }
-    tcga_abbreviation = stringr::str_to_upper(tcga_abbreviation)
-    mapfile = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v22.annotation.gene.probeMap'
-    fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.htseq_fpkm.tsv.gz')
+    message('include TCGA in the bulk object for further evaluation')
     to_use_genes = rownames(scExpr)
-
-    message('downloading tcga expression from Xena browser')
-    tcga_expr = xnea_fpkm2tpm(fpkmfile,mapfile,to_use_genes)
-    purity_allMethods = tumor_purity(colnames(tcga_expr))
-
-    purity = purity_allMethods[,purity_method][match(colnames(tcga_expr),rownames(purity_allMethods))]
-
-    tcga_obj = list()
-    tcga_obj$simulated_bulk = tcga_expr
-    tcga_obj$simulated_frac = matrix(purity,ncol = 1,dimnames = list(NULL,purity_method))
-    bulk_simulation_obj[[paste0('tcga_',tcga_abbreviation)]] = tcga_obj
+    bulk_simulation_obj[[paste0('tcga_',tcga_abbreviation)]] = build_tcga_obj(tcga_abbreviation,
+                                                                              to_use_genes,
+                                                                              purity_methods)
+    cat('\n')
   }
 
-  # generate a list of cell-type specific markers from training scRNA
   if(!is.null(refMarkers_methods)){
-    marker_list = refMarkers(refMarkers_methods,
-                             scExpr_train,
-                             cell_type_labels_train,
-                             cell_state_labels_train,
-                             hv_genes,
-                             log2FC,
-                             log2FC_flexible,
-                             minimum_n,
-                             maximum_n,
-                             max.spec_cutoff_for_DE,
-                             sigMatrixList)
+    message('generate a list of cell-type specific markers from training scRNA')
+    marker_list = do.call(refMarkers,c(list(methods = refMarkers_methods,
+                                            scExpr = scExpr_train,
+                                            cell_type_labels = cell_type_labels_train,
+                                            cell_state_labels  = cell_state_labels_train),
+                                       refMarkers_args))
+
+
+    cat('\n')
   }else{
     marker_list = list()
   }
 
-  # generate a list of signature matrices from training scRNA
   if(!is.null(refMarkers_methods)){
-    if(all.equal(intersect(refMarkers_methods,refMatrix_methods),c('limma','scran'))){
-      refMatrix_methods_remaining = refMatrix_methods[! refMatrix_methods %in% c('limma','scran')]
-      sigMarix_list = refMatrix(methods = c(refMatrix_methods_remaining,'markerList'),
-                                scExpr = scExpr_train,
-                                cell_type_labels = cell_type_labels_train,
-                                markerList = marker_list)
+    message('generate a list of signature matrices from training scRNA')
+    query = all(intersect(refMarkers_methods,refMatrix_methods) %in% c('limma','scran')) & length(intersect(refMarkers_methods,refMatrix_methods)>0)
+
+    if(query == T){
+      refMatrix_methods_remaining = refMatrix_methods[!refMatrix_methods %in% refMarkers_methods]
+      sigMarix_list = do.call(refMatrix,c(list(methods = c(refMatrix_methods_remaining,'markerList'),
+                                               scExpr = scExpr_train,
+                                               cell_type_labels = cell_type_labels_train,
+                                               markerList = marker_list),
+                                          refMatrix_args))
+
     }else{
-      sigMarix_list = refMatrix(refMatrix_methods,
-                                scExpr_train,
-                                cell_type_labels_train,
-                                cell_state_labels_train,
-                                hv_genes,
-                                log2FC,
-                                log2FC_flexible,
-                                minimum_n,
-                                maximum_n,
-                                max.spec_cutoff_for_DE,
-                                markerList)
+      sigMarix_list = do.call(refMatrix,c(list(methods = refMatrix_methods,
+                                               scExpr = scExpr_train,
+                                               cell_type_labels = cell_type_labels_train,
+                                               cell_state_labels  = cell_state_labels_train),
+                                          refMatrix_args))
+
     }
+    cat('\n')
   }else{
     sigMarix_list = list()
   }
 
-  # prepare input for autogeneS using training scRNA
+
   if(create_autogeneS_input==T){
-    pre_refMatrix_autogeneS(scExpr_train,
-                            cell_type_labels_train,
-                            hv_genes,
-                            max.spec_cutoff_for_autogeneS,
-                            autogeneS_input_file_name,
-                            display_autogeneS_command,
-                            ngen,
-                            seed,
-                            nfeatures,
-                            mode)
+    message('prepare input for autogeneS using training scRNA')
+    do.call(pre_refMatrix_autogeneS,c(list(scExpr = scExpr_train,
+                                           cell_type_labels = cell_type_labels_train,
+                                           autogeneS_input_file_name = autogeneS_input_file_name),
+                                      pre_refMatrix_autogeneS_args))
+
+
+    cat('\n')
   }
 
-  # prepare input for cibersortx using training scRNA
   if(create_cibersortx_input ==T){
-    pre_refMatrix_cibersortx(scExpr_train,
-                             cell_type_labels_train,
-                             downsample,
-                             downsample_ratio,
-                             scMeta,
-                             colnames_of_sample,
-                             colnames_of_cellType,
-                             cibersortx_input_file_name)
+    message('prepare input for cibersortx using training scRNA')
+    do.call(pre_refMatrix_cibersortx,c(list(scExpr = scExpr_train,
+                                            cell_type_labels = cell_type_labels_train,
+                                            scMeta = scMeta_train,
+                                            colnames_of_sample = colnames_of_sample,
+                                            colnames_of_cellType = colnames_of_cellType,
+                                            cibersortx_input_file_name = cibersortx_input_file_name),
+                                       pre_refMatrix_cibersortx_args))
+
+        cat('\n')
   }
 
   # organize all together
@@ -453,13 +531,24 @@ benchmarking_init = function(scExpr,scMeta,
 #' # first create a benchmarking_obj using benchmarking_init():
 #' benchmarking_obj = benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
-#'                   fixed_cell_type = 'malignant',
-#'                   bulkSimulator_methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
 #'
-#'                   # argument for semi bulk simulation method
+#'                   # argument for fracSimulator_Beta()
+#'                   nbulk = 100,
+#'                   fixed_cell_type = 'malignant',
+#'
+#'                   # argument for training/testing splitting:
+#'                   training_ratio = 0.5,
+#'                   split_by = "cell",
+#'
+#'                   # arguments for bulk simulation
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'
+#'                   # argument for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'                   dirichlet_cs_par = 0.1,
+#'                   min.subcluster.size = 20,
 #'
 #'                   # argument for marker constructions
 #'                   refMarkers_methods = c('limma','scran'),
@@ -470,9 +559,14 @@ benchmarking_init = function(scExpr,scMeta,
 #'                   # arguments to include tcga
 #'                   include_tcga = T,
 #'                   tcga_abbreviation = 'SKCM',
-#'                   purity_method = 'CPE',
+#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
 #'
-#'                   n.core = 4)
+#'                   # export files for autogeneS and cibersortx
+#'                   create_autogeneS_input = T,
+#'                   create_cibersortx_input = T
+#'
+#'                   n.core = 4
+#'                   )
 #'
 #' # perform deconvolution on the benchmarking_obj using all categories of deconvolution methods, which includes:
 #' # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'
@@ -704,13 +798,20 @@ benchmarking_deconv = function(benchmarking_obj,
 #' # first create a benchmarking_obj using benchmarking_init():
 #' benchmarking_obj = benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
-#'                   fixed_cell_type = 'malignant',
-#'                   bulkSimulator_methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC'),
+#'
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
 #'
-#'                   # argument for semi bulk simulation method
+#'                   # argument for fracSimulator_Beta()
+#'                   fixed_cell_type = 'malignant',
+#'
+#'                   # arguments for bulk simulation
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'
+#'                   # argument for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'                   dirichlet_cs_par = 0.1,
+#'                   min.subcluster.size = 20,
 #'
 #'                   # argument for marker constructions
 #'                   refMarkers_methods = c('limma','scran'),
@@ -721,9 +822,14 @@ benchmarking_deconv = function(benchmarking_obj,
 #'                   # arguments to include tcga
 #'                   include_tcga = T,
 #'                   tcga_abbreviation = 'SKCM',
-#'                   purity_method = 'CPE',
+#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
 #'
-#'                   n.core = 4)
+#'                   # export files for autogeneS and cibersortx
+#'                   create_autogeneS_input = T,
+#'                   create_cibersortx_input = T
+#'
+#'                   n.core = 4
+#'                   )
 #'
 #' # perform deconvolution on the benchmarking_obj using all categories of deconvolution methods, which includes:
 #' # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'

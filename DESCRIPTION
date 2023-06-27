@@ -42,4 +42,5 @@ Suggests:
     linseed,
     data.table,
     TCGAbiolinks,
-    InstaPrism
+    InstaPrism,
+    scran

@@ -57,3 +57,64 @@ tumor_purity <-function(tcga_barcodes){
 
   return(purity)
 }
+
+
+build_tcga_obj = function(tcga_abbreviation,
+                          to_use_genes,
+                          purity_methods){
+  if(is.na(tcga_abbreviation)){
+    stop('Please provide the TCGA cohort abbreviation, such as "SKCM", to specifically include this cohort in the bulk object')
+  }
+
+  tcga_abbreviation = stringr::str_to_upper(tcga_abbreviation)
+  mapfile = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v22.annotation.gene.probeMap'
+  fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.htseq_fpkm.tsv.gz')
+
+  message('downloading tcga expression from Xena browser')
+  tcga_expr = xnea_fpkm2tpm(fpkmfile,mapfile,to_use_genes)
+  purity_allMethods = tumor_purity(colnames(tcga_expr))
+
+  purity = matrix(NA,
+                  nrow = ncol(tcga_expr),
+                  ncol = length(purity_methods),dimnames = list(colnames(tcga_expr),purity_methods))
+
+  for(i in 1:length(purity_methods)){
+    purity[,i] = purity_allMethods[,purity_methods[i]][match(colnames(tcga_expr),rownames(purity_allMethods))]
+  }
+
+  tcga_obj = list()
+  tcga_obj$simulated_bulk = tcga_expr
+  tcga_obj$simulated_frac = purity
+
+  return(tcga_obj)
+}
+
+get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
+  require(scran,quietly = T)
+
+  stopifnot(ncol(scExpr)==length(cell_type_labels))
+
+  group = list()
+  for(i in unique(cell_type_labels)){
+    group[[i]] <- which(cell_type_labels %in% i)
+  }
+
+  get_sublabels = function(ct){
+    cl = scran::quickCluster(scExpr[,group[[ct]]],min.size = min.subcluster.size)
+    labels = paste0(ct,'_',cl)
+    return(labels)
+  }
+
+  f = lapply(names(group),get_sublabels)
+  names(f) = names(group)
+
+  subcluster_IDtable = data.frame(id = do.call(c,group),
+                                  label = do.call(c,f))
+
+  subcluster_IDtable = subcluster_IDtable[order(subcluster_IDtable$id),]
+  return(subcluster_IDtable$label)
+}
+
+
+
+

@@ -9,7 +9,7 @@ bulkSimulator(
   scExpr,
   scMeta,
   colnames_of_cellType = NA,
-  colnames_of_cellState = NA,
+  colnames_of_subcluster = NA,
   colnames_of_sample = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
@@ -17,6 +17,7 @@ bulkSimulator(
   min_chunkSize = 5,
   use_chunk = "all",
   dirichlet_cs_par = 0.1,
+  min.subcluster.size = 20,
   min.percentage = 1,
   max.percentage = 99,
   nbulk = 100,
@@ -37,7 +38,8 @@ bulkSimulator(
 
 \item{colnames_of_cellType}{column name that corresponds to cellType in scMeta}
 
-\item{colnames_of_cellState}{column name that corresponds to cellState in scMeta, where cellState contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.}
+\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
+Set to NA if subclustering information is not available; the function will then generate subclustering information automatically}
 
 \item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. Required for 'semi', 'heter', and 'SCDC' methods.}
 
@@ -55,6 +57,8 @@ When use_chunk = 'all', use all the cells belonging to the same patient for a gi
 when use_chunk = 'random', randomly select 50-100\% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods}
 
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' method.}
+
+\item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' method only.}
 
 \item{min.percentage}{minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'}
 
@@ -96,8 +100,12 @@ bulkSimulator(methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC
               # pre-defined simulated_frac will be used for 'homo', 'semi, 'heter' and 'immunedeconv' methods
               simulated_frac = simulated_frac,
 
-              # argument for 'semi' method
+              # argument for semi/heter_sampleIDfree bulk simulation method
               heter_cell_type = 'malignant',
+
+              # argument for heter_sampleIDfree bulk simulation method
+              dirichlet_cs_par = 0.1,
+              min.subcluster.size = 20,
 
               # argument for 'favilaco' and 'SCDC' method
               nbulk = 100,

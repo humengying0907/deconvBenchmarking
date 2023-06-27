@@ -10,7 +10,7 @@ fracSimulator_Beta(
   colnames_of_sample = NA,
   colnames_of_cellType = NA,
   fixed_cell_type = NA,
-  min.frac = 0,
+  min.frac = 0.01,
   showFractionPlot = T
 )
 }
@@ -27,7 +27,7 @@ fracSimulator_Beta(
 It is recommended to set this parameter to the name of the malignant cell types. If left undefined, the function will automatically
 select the most abundant cell type as 'fixed_cell_type'.}
 
-\item{min.frac}{minimum fraction in the simulated fraction, values below this threshold will be set to zero}
+\item{min.frac}{minimum fraction in the simulated fraction, values below this threshold will be set to zero. Default = 0.01}
 
 \item{showFractionPlot}{a logical variable determining whether to display simulated fraction distribution for the fixed_cell_type}
 }

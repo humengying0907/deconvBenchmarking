@@ -10,7 +10,7 @@
 #' @param fixed_cell_type a character denotes the target cell type for which we strive to faithfully preserve its distribution.
 #'    It is recommended to set this parameter to the name of the malignant cell types. If left undefined, the function will automatically
 #'    select the most abundant cell type as 'fixed_cell_type'.
-#' @param min.frac minimum fraction in the simulated fraction, values below this threshold will be set to zero
+#' @param min.frac minimum fraction in the simulated fraction, values below this threshold will be set to zero. Default = 0.01
 #' @param showFractionPlot a logical variable determining whether to display simulated fraction distribution for the fixed_cell_type
 #'
 #' @return a matrix of simulated fraction, with samples in rows and cell_types in columns
@@ -25,7 +25,7 @@ fracSimulator_Beta<-function(scMeta,n,
                              colnames_of_sample = NA,
                              colnames_of_cellType = NA,
                              fixed_cell_type = NA,
-                             min.frac = 0,
+                             min.frac = 0.01,
                              showFractionPlot = T){
 
   if(is.na(colnames_of_sample)|is.na(colnames_of_cellType)){
