@@ -46,21 +46,21 @@ this argument is also required when split_by = 'sample'}
 \item{nbulk}{number of simulated bulk samples. This argument is required when simulated_frac is not available; in this case, the function
 will generate simulated_frac automatically using fracSimulator_Beta() with the nbulk argument.}
 
-\item{fixed_cell_type}{argument for fracSimulator_Beta() function,  this argument will be called required when simulated_frac is not available.
-It denotes a character denotes the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
+\item{fixed_cell_type}{argument for fracSimulator_Beta() function,  this argument will be called when simulated_frac is not available.
+It is a character denoting the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
 to the name of the malignant cell types. If left undefined, the fracSimulator_Beta() will automatically select the most abundant cell type as 'fixed_cell_type'.}
 
 \item{training_ratio}{ratio of training cells. Default = 0.5}
 
 \item{split_by}{a string vector indicating how to split training and testing cells. Available options includes 'cell' and 'sample'.
 When split_by = 'cell', for each cell type, a pre-defined ratio of cells will be sampled as training cells. When split = 'sample',
-a pre-defined ratio of samples will be sampled as training samples, and all the cells associated will become training cells.}
+a pre-defined ratio of samples will be sampled as training samples, and all the cells belonging to training samples will become training cells.}
 
-\item{bulkSimulator_methods}{a character vector indicating which bulk simulation methods to use. Use list_bulkSimulator() to check for available method names.
-Set to NULL if no bulk simulation is needed.}
+\item{bulkSimulator_methods}{a character vector indicating which bulk simulation methods to use. Use \code{\link{list_bulkSimulator}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed.}
 
 \item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will generate subclustering information automatically}
+This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument}
 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. If set to NULL, the function will generate simulated_frac automatically
 using 'nbulk' and 'fixed_cell_type' arguments.}
@@ -72,20 +72,22 @@ This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation me
 
 \item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.}
 
-\item{refMarkers_methods}{a character vector specifying the desired methods for generating cell-type specific markers. Use list_refMarkers() to check for available method names.}
+\item{refMarkers_methods}{a character vector specifying the desired methods for generating cell-type specific markers. Use \code{\link{list_refMarkers}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods}
 
 \item{colnames_of_cellState}{column name that corresponds to the cellState in scMeta. This argument is only required for scran-based marker identification,
 where the differential expression (DE) analysis is performed between every pair of cell states from different cell types. Set this parameter to NA if the information is not available.
 In that case, the function will treat all cells from the same cell type identically.}
 
-\item{refMatrix_methods}{a character vector specifying the desired methods for generating signature matrices. Use list_refMarix() to check for available method names.}
+\item{refMatrix_methods}{a character vector specifying the desired methods for generating signature matrices. Use \code{\link{list_refMarix}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods}
 
-\item{include_tcga}{a logicial variable determining whether to include tcga in the output object. If True, the function will download associated TCGA cohort from xnea browser}
+\item{include_tcga}{a logicial variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser}
 
 \item{tcga_abbreviation}{a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'}
 
 \item{purity_methods}{a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE', Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE')}
+Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE', Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T}
 
 \item{create_autogeneS_input}{a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
 will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters}
@@ -116,44 +118,6 @@ The function performs the following steps: (1) It divides the cells into trainin
 (3) the testing cells are used to generate simulated bulk expression, which is then employed for deconvolution purposes;
 (4) additionally, this function offers the flexibility to include a TCGA cohort as part of the object for future deconvolution benchmarking
 }
-\section{Training/testing splitting}{
-
-This function first splits the cells into training cells and testing cells using \code{\link{create_train_test_splitting}}. Important parameters
-controlling how the dataset is splitted including:
-\itemize{
-\item \code{training_ratio}, which specifies the percentage of cells used as training cells
-\item \code{split_by}, which determines whether to split the cells randomly or constrained on samples
-}
-}
-
-\section{Reference profiles from training cells}{
-
-Training cells generated from splitting step will be utilized to generate reference profiles, such as markers and signature matrices. Specifically,
-the exported \code{marker_list} in the function output is generated from \code{\link{refMarkers}}, and the exported \code{sigMarix_list} is
-generated using \code{\link{refMatrix}}. Important parameters in reference construction including:
-\itemize{
-\item \code{refMarkers_methods}
-\item \code{refMatrix_methods}
-}
-Set the above parameters to NULL if the associated reference profiles is not needed.
-}
-
-\section{Bulk simulation using testing cells}{
-
-Testing cells are used to generate simulated bulk expression using \code{\link{bulkSimulator}}. By default \code{bulkSimulator()} requires a pre-defined
-fraction matrix \code{simulated_frac} determining cellular proportions to be aggregated. When \code{simulated_frac} is not available, the
-function will generate a \code{simulated_frac} automatically using \code{\link{fracSimulator_Beta}}. Important parameters in bulk simulation including:
-\itemize{
-\item \code{bulkSimulator_methods}, which specifies which bulk simulation strategies to use
-}
-}
-
-\section{export files for autogeneS and cibersortx}{
-
-This function also provides the option to prepare input for autogeneS and cibersortx using the training cells. For details about the preparation steps and additional arguments associated,
-check \code{\link{pre_refMatrix_autogeneS}} and \code{\link{pre_refMatrix_cibersortx}}.
-}
-
 \examples{
 \dontrun{
 # a standard benchmarking pipeline

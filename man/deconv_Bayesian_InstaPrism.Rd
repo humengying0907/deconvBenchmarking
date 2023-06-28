@@ -11,6 +11,8 @@ deconv_Bayesian_InstaPrism(
   colnames_of_cellType = NA,
   colnames_of_cellState = NA,
   colnames_of_sample = NA,
+  outlier.cut = 0.01,
+  outlier.fraction = 0.1,
   key = NA,
   n.iter = 100,
   n.core = 1
@@ -25,9 +27,17 @@ deconv_Bayesian_InstaPrism(
 
 \item{colnames_of_cellType}{column name that corresponds to cellType in scMeta}
 
-\item{colnames_of_cellState}{column name that corresponds to cellState in scMeta. Set to NA if not available}
+\item{colnames_of_cellState}{column name that corresponds to cellState in scMeta. Set to NA if this information is not available.
+In this case, the function will utilize cross-sample heterogeneity and assign cell states according to their original sampleID
+for the key cell type. For the remaining cell types, the cell state will be the same as the cell type.}
 
-\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta}
+\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. This argument will be called when colnames_of_cellState is not available}
+
+\item{outlier.cut}{Filter genes in bulk mixture whose expression fraction is greater than outlier.cut (Default=0.01)
+in more than outlier.fraction (Default=0.01) of bulk data. Removal of outlier genes will ensure that the inference will not be dominated by outliers.}
+
+\item{outlier.fraction}{Filter genes in bulk mixture whose expression fraction is greater than outlier.cut (Default=0.01)
+in more than outlier.fraction (Default=0.1) of bulk data. Removal of outlier genes will ensure that the inference will not be dominated by outliers.}
 
 \item{key}{InstaPrism argument: name of the malignant cell type. Upon setting the key parameter, the updated malignant reference
 will be unique for each individual. Set to NA if there is no malignant cells in the problem, and the updated reference will be the same for all the individuals}
@@ -37,8 +47,7 @@ will be unique for each individual. Set to NA if there is no malignant cells in 
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
 }
 \value{
-a list of deconvolution results using both initial reference and updated reference.  If the 'key' argument is valid,
-it also includes the results using the malignant_updated reference (with malignant updated only)
+a list InstaPrism deconvolution results using initial reference, updated reference and malignant_updated reference (when key is available)
 }
 \description{
 Bayesian-based deconvolution with InstaPrism

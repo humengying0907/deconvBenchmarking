@@ -81,6 +81,7 @@ refMarkers_limma <-function(scExpr, cell_type_labels, hv_genes=NULL,
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]
   }
   require(limma, quietly = T)
+
   limma_statistics = get_limma_statistics(scExpr,cell_type_labels,hv_genes)
   limma_markers = get_limma_markers(limma_statistics, log2FC, log2FC_flexible, minimum_n,maximum_n)
   return(limma_markers)

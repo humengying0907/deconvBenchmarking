@@ -90,8 +90,8 @@ deconv_regression_cibersort = function(bulk_expr,sigMatrix_list, cibersort_path 
 #' @export
 deconv_regression_MuSiC = function(bulk_expr, sigMatrix_list, scExpr = NULL, scMeta = NULL,
                                    colnames_of_cellType = NA, colnames_of_sample = NA, normalize = F, n.core = 1){
-  require(MuSiC,quietly = T)
-  require(SingleCellExperiment,quietly = T)
+  require(MuSiC,quietly = T) %>% suppressMessages()
+  require(SingleCellExperiment,quietly = T) %>% suppressMessages()
 
   if(is.null(scExpr) | is.null(scMeta) | is.na(colnames_of_cellType) | is.na(colnames_of_sample)){
     stop('please provide required arguments to run MuSiC')
@@ -103,7 +103,7 @@ deconv_regression_MuSiC = function(bulk_expr, sigMatrix_list, scExpr = NULL, scM
     sig_genes = commonRows(bulk_expr,ref)
     res.list = music_prop(bulk.mtx = bulk_expr, sc.sce = sc.sce, clusters = colnames_of_cellType,
                            markers = sig_genes, normalize = normalize, samples = colnames_of_sample,
-                           verbose = F)
+                           verbose = F) %>% suppressMessages()
     music_res = t(res.list$Est.prop.weighted)
     return(list(music_res))
   }
@@ -140,7 +140,7 @@ deconv_regression_wRLM = function(bulk_expr,sigMatrix_list,
                                   QN = FALSE,
                                   verbose = FALSE,
                                   n.core = 1){
-  require(LinDeconSeq,quietly = T)
+  require(LinDeconSeq,quietly = T) %>% suppressMessages()
 
   if(skip_raw == T){
     sigMatrix_list = sigMatrix_list[names(sigMatrix_list)!='raw']
@@ -152,7 +152,7 @@ deconv_regression_wRLM = function(bulk_expr,sigMatrix_list,
     ref = ref[cms,]
     LinDeconSeq_res = LinDeconSeq::deconSeq(bulk_expr %>% as.data.frame(),
                                             ref %>% as.data.frame(),
-                                            weight,intercept,scale,QN,verbose) %>% t()
+                                            weight,intercept,scale,QN,verbose) %>% suppressMessages() %>% t()
     return(list(LinDeconSeq_res))
   }
   pboptions(type = "txt", style = 3, char = "=")
@@ -175,7 +175,7 @@ deconv_regression_wRLM = function(bulk_expr,sigMatrix_list,
 #'    'RefBased_RPC_' followed by the name of the respective input signature matrix.
 #' @export
 deconv_regression_RPC = function(bulk_expr,sigMatrix_list, skip_raw = T, maxit = 100, n.core = 1){
-  require(EpiDISH,quietly = T)
+  require(EpiDISH,quietly = T) %>% suppressMessages()
 
   if(skip_raw == T){
     sigMatrix_list = sigMatrix_list[names(sigMatrix_list)!='raw']

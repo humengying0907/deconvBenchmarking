@@ -7,157 +7,72 @@
 benchmarking_deconv(
   benchmarking_obj,
   marker_based_methods = c("firstPC", "gsva", "debCAM", "TOAST"),
-  alpha = NULL,
-  sigma = NULL,
-  epsilon = 0.001,
-  maxIter = 1000,
   regression_based_methods = c("nnls", "cibersort", "MuSiC", "wRLM", "RPC"),
   cibersort_path = NULL,
-  QN_cibersort = F,
-  skip_raw_cibersort = T,
   scExpr = NULL,
   scMeta = NULL,
   colnames_of_cellType = NA,
   colnames_of_sample = NA,
-  normalize_MuSiC = F,
-  skip_raw_wRLM = TRUE,
-  weight_wRLM = TRUE,
-  intercept_wRLM = TRUE,
-  scale_wRLM = FALSE,
-  QN_wRLM = FALSE,
-  skip_raw_RPC = TRUE,
-  maxit_RPC = 100,
   refFree_methods = c("linseed", "debCAM"),
   k = NA,
-  corner.strategy = 2,
-  dim.rdc = 10,
-  thres.low = 0.05,
-  thres.high = 0.95,
-  cluster.method = "K-Means",
-  cluster.num = 50,
-  MG.num.thres = 20,
-  lof.thres = 0.02,
-  quickhull = TRUE,
-  quick.select = NULL,
-  sample.weight = NULL,
-  appro3 = TRUE,
-  generalNMF = FALSE,
-  cores = NULL,
   Bayesian_methods = c("InstaPrism"),
   colnames_of_cellState = NA,
   key = NA,
-  n.iter = 100,
+  InstaPrism.n.iter = 100,
   immunedeconv_methods = c("xcell", "mcp_counter", "epic", "quantiseq", "timer", "abis",
     "consensus_tme", "estimate"),
   tcga_abbreviation = NA,
-  tumor = T,
-  scale_mrna = T,
-  n.core = 1
+  n.core = 1,
+  ...
 )
 }
 \arguments{
 \item{benchmarking_obj}{a benchmarking_obj generated from benchmarking_init() function}
 
 \item{marker_based_methods}{a character vector indicating which methods to use for marker_based deconvolution.
-Use list_deconv_marker() to check for available method names. Set to NULL if no marker_based deconvolution is needed.}
-
-\item{alpha}{TOAST::MDeconv() argument. A vector including the prior mean for all cell types. Set to NULL to for TOAST/-P (partial reference-free deconvolution without prior)}
-
-\item{sigma}{TOAST::MDeconv() argument. A vector including the prior standard deviation for all cell types.  Set to NULL to for TOAST/-P (partial reference-free deconvolution without prior)}
-
-\item{epsilon}{TOAST::MDeconv() argument. A numeric variable to control the level of convergence. With a large epsilon, it converges quickly and the algorithm may not converge well.
-With a small epsilon, it converges slower and the algorithm may converge "too much". The default value is 1e-3, which we find is a reasonable threshold.}
-
-\item{maxIter}{TOAST::MDeconv() argument. Number of maximum iterations.}
+Use \code{\link{list_deconv_marker}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed. Set to NULL if no marker_based deconvolution is needed.}
 
 \item{regression_based_methods}{a character vector indicating which methods to use for regression_based deconvolution.
-Use list_deconv_regression() to check for available method names. Set to NULL if no regression_based deconvolution is needed.}
+Use \code{\link{list_deconv_regression}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed. Set to NULL if no regression_based deconvolution is needed.}
 
-\item{cibersort_path}{path to CIBERSORT.R. This argument is required for 'cibersort' method}
+\item{cibersort_path}{path to CIBERSORT.R. This argument is required for 'cibersort' regression method}
 
-\item{QN_cibersort}{a logical variable determining whether to quantile normalize the input matrix. Default = F. This argument is required for 'cibersort' method}
+\item{scExpr}{single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods}
 
-\item{skip_raw_cibersort}{a logical variable indicating whether to skip the signature matrix named 'raw', which corresponds to the raw reference matrix without gene filtering.
-Setting this argument to TRUE is recommended to save computation time and resources. This argument is required for 'cibersort' method}
+\item{scMeta}{dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' and all Bayesian methods}
 
-\item{scExpr}{single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns. This argument is required for 'MuSiC' method}
+\item{colnames_of_cellType}{column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC' method and all Bayesian methods}
 
-\item{scMeta}{dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' method}
+\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC' method and/or all Bayesian methods}
 
-\item{colnames_of_cellType}{column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC' method}
-
-\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC' method}
-
-\item{normalize_MuSiC}{MuSiC::music_prop() normalize argument. Default = F. This argument is required for 'MuSiC' method}
-
-\item{skip_raw_wRLM}{a logical variable indicating whether to skip the signature matrix named 'raw', which corresponds to the raw reference matrix without gene filtering.
-Setting this argument to TRUE is recommended to save computation time and resources. This argument is required for 'wRLM' method}
-
-\item{weight_wRLM}{LinDeconSeq::deconSeq() argument, a logical variable determining whether to weight gene or not. Default = T. This argument is required for 'wRLM' method}
-
-\item{intercept_wRLM}{LinDeconSeq::deconSeq() argument, a logical variable determining whether to add intercept when using robust linear regression. Default = T. This argument is required for 'wRLM' method}
-
-\item{scale_wRLM}{LinDeconSeq::deconSeq() argument, a logical variable determining whether to scale bulk gene expression or not. Default = T. This argument is required for 'wRLM' method}
-
-\item{QN_wRLM}{LinDeconSeq::deconSeq() argument, a logical variable determining whether to quantile normalize bulk expression profile. Default = T. This argument is required for 'wRLM' method}
-
-\item{skip_raw_RPC}{a logical variable indicating whether to skip the signature matrix named 'raw', which corresponds to the raw reference matrix without gene filtering.
-Setting this argument to TRUE is recommended to save computation time and resources. This argument is required for 'RPC' method}
-
-\item{maxit_RPC}{EpiDISH::epidish() argument, an integer indicating the limit of the number of IWLS iterations. Default = 100. This argument is required for RPC method}
-
-\item{refFree_methods}{a character vector indicating which methods to use for reference free deconvolution. Use list_deconv_refFree() to check for available method names.}
+\item{refFree_methods}{a character vector indicating which methods to use for reference free deconvolution. Use \code{\link{list_deconv_refFree}} to check for available method names
+and suggested packages associated them. Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed..}
 
 \item{k}{argument for reference free methods: number of cell types in bulk expression. If set to NA, will be default to true number of cell types in bulk expression}
 
-\item{corner.strategy}{The method to find corners of convex hull. 1: minimum sum of margin-of-errors; 2: minimum sum of reconstruction errors. The default is 2.}
+\item{Bayesian_methods}{a character vector indicating which Bayesian_methods to use. Use \code{\link{list_deconv_Bayesian}} to check for available method names and suggested packages associated them.
+Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed.}
 
-\item{dim.rdc}{Reduced data dimension; should be not less than maximum candidate K.}
+\item{colnames_of_cellState}{argument needed for Bayesian methods. It denotes column name that corresponds to cellState in scMeta. Set to NA if this information is not available.
+In this case, the function will utilize cross-sample heterogeneity and assign cell states according to their original sampleID
+for the key cell type. For the remaining cell types, the cell state will be the same as the cell type.}
 
-\item{thres.low}{The lower bound of percentage of genes to keep for CAM with ranked norm. The value should be between 0 and 1. The default is 0.05.}
-
-\item{thres.high}{The higher bound of percentage of genes to keep for CAM with ranked norm. The value should be between 0 and 1. The default is 0.95.}
-
-\item{cluster.method}{The method to do clustering. The default "K-Means" will use kmeans. The alternative "apcluster" will use apclusterK-methods.}
-
-\item{cluster.num}{The number of clusters; should be much larger than K. The default is 50.}
-
-\item{MG.num.thres}{The clusters with the gene number smaller than MG.num.thres will be treated as outliers. The default is 20.}
-
-\item{lof.thres}{Remove local outlier using lofactor. MG.num.thres is used as the number of neighbors in the calculation of the local outlier factors. The default value 0.02 will remove top 2\% local outliers. Zero value will disable lof.}
-
-\item{quickhull}{Perform quickhull to select clusters or not. The default is True.}
-
-\item{quick.select}{The number of candidate corners kept after quickhull and SFFS greedy search. If Null, only quickhull is applied. The default is 20. If this value is larger than the number of candidate corners after quickhull, greedy search will also not be applied.}
-
-\item{sample.weight}{Vector of sample weights. If NULL, all samples have the same weights. The length should be the same as sample numbers. All values should be positive.}
-
-\item{appro3}{Estimate A and S matrix by approach 3 or not. Please see CAMASest for further information. The default is TRUE.}
-
-\item{generalNMF}{If TRUE, the decomposed proportion matrix has no sum-to-one constraint for each row. The default is FALSE. TRUE value brings two changes: (1) Without assuming samples are normalized,
-the first principal component will not forced to be along c(1,1,..,1) but a standard PCA will be applied during preprocessing. (2) Without sum-to-one constraint for each row, the scale ambiguity of each column vector in proportion matrix will not be removed.}
-
-\item{cores}{The number of system cores for parallel computing. If not provided, one core for each element in K will be invoked. Zero value will disable parallel computing.}
-
-\item{Bayesian_methods}{a character vector indicating which Bayesian_methods to use. Use list_deconv_Bayesian() to check for available method names.}
-
-\item{colnames_of_cellState}{column name that corresponds to cellState in scMeta. Set to NA if not available}
-
-\item{key}{InstaPrism argument: name of the malignant cell type. Upon setting the key parameter, the updated malignant reference
+\item{key}{argument needed for Bayesian methods: name of the malignant cell type. Upon setting the key parameter, the updated malignant reference
 will be unique for each individual. Set to NA if there is no malignant cells in the problem, and the updated reference will be the same for all the individuals}
 
-\item{n.iter}{InstaPrism argument: number of iterations. Default = 100}
+\item{InstaPrism.n.iter}{number of iterations for 'InstaPrism' method. Default = 100}
 
 \item{immunedeconv_methods}{a character vector indicating which methods to use from immunedeconv package. Available methods include:
-'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'}
+'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'. Make sure you have the suggested package'immunedeconv' installed before using immunedeconv methods.
+Set to NULL if no immunedeconv_methods is needed.}
 
 \item{tcga_abbreviation}{a character string indicating tcga-abbreviation for the bulk data to be deconvoluted, for example 'skcm'. Required for 'timer' and 'consensus_tme'.}
 
-\item{tumor}{a logical variable to determine whether to use a signature matrix/procedure optimized for tumor samples, if supported by the method. Currently affects EPIC and quanTIseq.}
-
-\item{scale_mrna}{logical. If FALSE, disable correction for mRNA content of different cell types. This is supported by methods that compute an absolute score (EPIC and quanTIseq)}
-
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
+
+\item{...}{additional arguments to be passed to the following functions: deconv_marker(), deconv_regression(), deconv_refFree(), deconv_Bayesian() and immunedeconv::deconvolute()}
 }
 \value{
 a list of deconvolution results for each bulk expression in the benchmarking_obj
@@ -170,12 +85,16 @@ Perform deconvolution on the benchmarking_obj
 # first create a benchmarking_obj using benchmarking_init():
 benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   scMeta = scMeta,
-
                   colnames_of_cellType = 'cell_type',
                   colnames_of_sample = 'sampleID',
 
                   # argument for fracSimulator_Beta()
+                  nbulk = 100,
                   fixed_cell_type = 'malignant',
+
+                  # argument for training/testing splitting:
+                  training_ratio = 0.5,
+                  split_by = "cell",
 
                   # arguments for bulk simulation
                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
@@ -233,7 +152,6 @@ benchmarking_deconv(benchmarking_obj,
                     # arguments for other deconvolution methods
                     immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'),
                     tcga_abbreviation = 'SKCM', # arguments required for 'timer' and 'consensus_tme'
-
 
                     n.core = 4)
 

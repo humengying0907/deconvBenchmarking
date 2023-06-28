@@ -11,7 +11,7 @@
 #'    'MarkerBased_firstPC_' followed by the name of the method used to generate the markers, such as 'limma'
 #' @export
 deconv_marker_firstPC = function(bulk_expr, marker_list, n.core = 1){
-
+  require(FactoMineR,quietly = T) %>% suppressMessages()
   quick_pca = function(markers_subList){
     firstPC = function(genes,bulk_expr){
       mat=bulk_expr[rownames(bulk_expr) %in% genes,]
@@ -40,10 +40,10 @@ deconv_marker_firstPC = function(bulk_expr, marker_list, n.core = 1){
 #'    'MarkerBased_gsva_' followed by the name of the method used to generate the markers, such as 'limma'
 #' @export
 deconv_markers_gsva = function(bulk_expr, marker_list, n.core = 1){
-  require(GSVA,quietly = T)
+  require(GSVA,quietly = T) %>% suppressMessages()
 
   quick_gsva = function(markers_subList){
-    gsva_scores=GSVA::gsva(bulk_expr,markers_subList,method='ssgsea',ssgsea.norm=F,verbose=F)
+    gsva_scores=GSVA::gsva(bulk_expr,markers_subList,method='ssgsea',ssgsea.norm=F,verbose=F) %>% suppressMessages()
     return(list(gsva_scores))
   }
 
@@ -66,7 +66,7 @@ deconv_markers_gsva = function(bulk_expr, marker_list, n.core = 1){
 #'    'MarkerBased_debCAM_' followed by the name of the method used to generate the markers, such as 'limma'
 #' @export
 deconv_marker_debCAM = function(bulk_expr, marker_list, n.core = 1){
-  require(debCAM, quietly = T)
+  require(debCAM, quietly = T) %>% suppressMessages()
   quick_CAMmarker = function(markers_subList){
     CAMmarker_res = debCAM::AfromMarkers(bulk_expr,markers_subList)
     colnames(CAMmarker_res) = names(markers_subList)
@@ -98,10 +98,10 @@ deconv_marker_debCAM = function(bulk_expr, marker_list, n.core = 1){
 #' @export
 deconv_markers_TOAST = function(bulk_expr, marker_list, alpha = NULL, sigma = NULL,
                                 epsilon = 0.001, maxIter = 1000,n.core = 1){
-  require(TOAST, quietly = T)
+  require(TOAST, quietly = T) %>% suppressMessages()
 
   quick_PRF = function(markers_subList){
-    PRF_res = TOAST::MDeconv(bulk_expr,markers_subList,alpha, sigma,epsilon,maxIter,verbose= FALSE)
+    PRF_res = TOAST::MDeconv(bulk_expr,markers_subList,alpha, sigma,epsilon,maxIter,verbose= FALSE) %>% suppressMessages()
     return(list(PRF_res$H))
   }
 

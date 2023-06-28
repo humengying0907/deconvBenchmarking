@@ -17,15 +17,16 @@ Depends:
     pbapply,
     fitdistrplus,
     gtools,
-    nnls,
     stringr,
-    caret
-Suggests: 
-    immunedeconv,
+    caret,
     Biobase,
-    SCDC,
     ggplot2,
     viridis,
+    data.table
+Suggests: 
+    nnls,
+    immunedeconv,
+    SCDC,
     ggpointdensity,
     BayesPrism,
     limma,
@@ -40,7 +41,6 @@ Suggests:
     FactoMineR,
     GSVA,
     linseed,
-    data.table,
     TCGAbiolinks,
     InstaPrism,
     scran

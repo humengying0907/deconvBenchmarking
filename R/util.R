@@ -90,7 +90,7 @@ build_tcga_obj = function(tcga_abbreviation,
 }
 
 get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
-  require(scran,quietly = T)
+  require(scran,quietly = T) %>% suppressMessages()
 
   stopifnot(ncol(scExpr)==length(cell_type_labels))
 
@@ -100,7 +100,7 @@ get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
   }
 
   get_sublabels = function(ct){
-    cl = scran::quickCluster(scExpr[,group[[ct]]],min.size = min.subcluster.size)
+    cl = scran::quickCluster(scExpr[,group[[ct]]],min.size = min(min.subcluster.size,length(group[[ct]])))
     labels = paste0(ct,'_',cl)
     return(labels)
   }

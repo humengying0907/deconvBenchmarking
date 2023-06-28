@@ -434,7 +434,7 @@ bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
   if(!is.na(colnames_of_subcluster)){
     subcluster_labels = scMeta[,colnames_of_subcluster]
   }else{
-    subcluster_labels = get_subcluster(scExpr,cell_type_labels, min.subcluster.size)
+    subcluster_labels = get_subcluster(scExpr,cell_type_labels, min.subcluster.size) %>% suppressWarnings()
   }
 
   C = build_ref_matrix(scExpr,subcluster_labels)
@@ -460,7 +460,7 @@ bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
           num.cs=sample(1:length(cs),1,prob = rev(1:length(cs)))
         }
         cs.included=sample(cs,num.cs)
-        cs_frac[i,cs.included]=rdirichlet(1,subcluster_table[cs.included,'n']*dirichlet_cs_par)[1,]
+        cs_frac[i,cs.included]=gtools::rdirichlet(1,subcluster_table[cs.included,'n']*dirichlet_cs_par)[1,]
       }
       cs_frac[is.na(cs_frac)]=0
       cs_frac=sweep(cs_frac,1,ct_frac[,cell_type],'*')
@@ -510,7 +510,7 @@ bulkSimulator_favilaco = function(scExpr, scMeta, colnames_of_cellType = NA, nbu
   phenoData <- scMeta %>% mutate_('cellType'=colnames_of_cellType)
   phenoData$cellID = rownames(phenoData)
 
-  v = Generator(scExpr,phenoData,Num.mixtures = nbulk, pool.size , min.percentage , max.percentage , seed )
+  v = Generator(scExpr,phenoData,Num.mixtures = nbulk, pool.size, min.percentage, max.percentage, seed)
   simulated_frac = as.matrix(t(v$P))
   rownames(simulated_frac) = NULL
 
@@ -534,8 +534,9 @@ bulkSimulator_favilaco = function(scExpr, scMeta, colnames_of_cellType = NA, nbu
 #' @return a list containing the simulated bulk expression and its associated simulated fraction matrix
 #' @export
 bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA , simulated_frac = NULL, n_cells = 500){
+
   require(immunedeconv, quietly = T)
-  require(Biobase, quietly = T)
+
   stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
 
   if(is.na(colnames_of_cellType)){
@@ -549,12 +550,15 @@ bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA 
   cell_type_labels=scMeta[,colnames_of_cellType]
   stopifnot(all(colnames(simulated_frac) %in% unique(cell_type_labels)))
 
-  scMeta %>% mutate_('cell_type'=colnames_of_cellType)
+  # immunedeconv::make_bulk_eset requires eset to have a `cell_type` column in `pData`.
+  scMeta_renamed = data.frame(row.names = rownames(scMeta),
+                              cell_type = scMeta[,colnames_of_cellType])
+
   fdata = data.frame(gene_symbol = rownames(scExpr))
   rownames(fdata) = rownames(scExpr)
 
-  eset = Biobase::ExpressionSet(scExpr,phenoData = as(scMeta, "AnnotatedDataFrame"),featureData = as(fdata, "AnnotatedDataFrame"))
-  new_eset <- immunedeconv::make_bulk_eset(eset, simulated_frac, n_cells = 500)
+  eset = Biobase::ExpressionSet(scExpr,phenoData = as(scMeta_renamed, "AnnotatedDataFrame"),featureData = as(fdata, "AnnotatedDataFrame"))
+  new_eset <- immunedeconv::make_bulk_eset(eset, simulated_frac, n_cells = n_cells) %>% base::suppressMessages()
   D = exprs(new_eset)
   colnames(D)=paste0('simulated',1:ncol(D))
 
@@ -605,7 +609,8 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
   if(is.null(ct.sub)){
     ct.sub = unique(scMeta[,colnames_of_cellType])
   }
-  v = SCDC::generateBulk_norep(eset,ct.varname=colnames_of_cellType,sample = colnames_of_sample,disease, ct.sub, prop_mat, nbulk, samplewithRep)
+  v = SCDC::generateBulk_norep(eset, ct.varname = colnames_of_cellType, sample = colnames_of_sample,
+                               disease, ct.sub, prop_mat, nbulk, samplewithRep) %>% base::suppressMessages()
 
   D = v$pseudo_bulk
   D=apply(D,2,function(x)((x/sum(x))*1e+06))
