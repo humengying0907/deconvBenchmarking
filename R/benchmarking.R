@@ -436,7 +436,8 @@ benchmarking_init = function(scExpr,scMeta,
 #'    Use \code{\link{list_deconv_regression}} to check for available method names and suggested packages associated them.
 #'    Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed. Set to NULL if no regression_based deconvolution is needed.
 #' @param cibersort_path path to CIBERSORT.R. This argument is required for 'cibersort' regression method
-#' @param scExpr single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods
+#' @param scExpr Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods,
+#'    as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC' and all Bayesian methods.
 #' @param scMeta dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' and all Bayesian methods
 #' @param colnames_of_cellType column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC' method and all Bayesian methods
 #' @param colnames_of_sample column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC' method and/or all Bayesian methods
@@ -633,6 +634,24 @@ benchmarking_deconv = function(benchmarking_obj,
   immunedeconv_deconvolute_args = arg_list[names(arg_list) %in% c('tumor','arrays','column','rmgenes',
                                                                   'scale_mrna','expected_cell_types')]
 
+  if(!is.null(scExpr) & !is.null(scMeta)){
+
+    stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
+
+    if(all(benchmarking_obj$splitting$training_cells %in% colnames(scExpr))){
+      scExpr_train = scExpr[,benchmarking_obj$splitting$training_cells]
+      scMeta_train = scMeta[benchmarking_obj$splitting$training_cells,]
+    }else{
+      scExpr_train = scExpr
+      scMeta_train = scMeta
+      warning('The provided scRNA profiles does not include all the training cells used in the splitting steps.
+              The provided scRNA profile will be used for MuSiC and/or Bayesian methods.')
+    }
+  }else{
+    scExpr_train = NULL
+    scMeta_train = NULL
+  }
+
 
   for(bulk in names(benchmarking_obj$bulk_simulation_obj)){
 
@@ -650,11 +669,6 @@ benchmarking_deconv = function(benchmarking_obj,
     }
 
     if(!is.null(regression_based_methods)){
-
-      if('MuSiC' %in% regression_based_methods){
-        scExpr_train = scExpr[,benchmarking_obj$splitting$training_cells]
-        scMeta_train = scMeta[benchmarking_obj$splitting$training_cells,]
-      }
 
       regression_based_deconvRes = do.call(deconv_regression,c(list(methods = regression_based_methods,
                                                                     bulk_expr = bulk_expr,
@@ -684,8 +698,6 @@ benchmarking_deconv = function(benchmarking_obj,
     }
 
     if(!is.null(Bayesian_methods)){
-      scExpr_train = scExpr[,benchmarking_obj$splitting$training_cells]
-      scMeta_train = scMeta[benchmarking_obj$splitting$training_cells,]
 
       Bayesian_deconvRes = do.call(deconv_Bayesian,c(list(methods =Bayesian_methods,
                                                           bulk_expr = bulk_expr,

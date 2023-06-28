@@ -39,7 +39,8 @@ Make sure you have the required packages installed to use these methods. Set to 
 
 \item{cibersort_path}{path to CIBERSORT.R. This argument is required for 'cibersort' regression method}
 
-\item{scExpr}{single cell expression matrix used to simulate bulk data, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods}
+\item{scExpr}{Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods,
+as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC' and all Bayesian methods.}
 
 \item{scMeta}{dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' and all Bayesian methods}
 
