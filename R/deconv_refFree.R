@@ -87,7 +87,7 @@ deconv_refFree_debCAM = function(bulk_expr, k, corner.strategy = 2, dim.rdc = 10
 #'    the first principal component will not forced to be along c(1,1,..,1) but a standard PCA will be applied during preprocessing. (2) Without sum-to-one constraint for each row, the scale ambiguity of each column vector in proportion matrix will not be removed.
 #' @param cores The number of system cores for parallel computing. If not provided, one core for each element in K will be invoked. Zero value will disable parallel computing.
 #'
-#' @return a list of deconvolution results obtained using different reference free methods. The results are named using the format 'refFree_' + method
+#' @return a list of deconvolution results obtained using different reference free methods. The results are named using the format 'RefFree_' + method
 #' @export
 #'
 #' @examples
@@ -111,10 +111,10 @@ deconv_refFree = function(methods,
     message(description)
     switch(method,
            linseed = {
-             result = list(refFree_linseed = deconv_refFree_linseed(bulk_expr,k))
+             result = list(RefFree_linseed = deconv_refFree_linseed(bulk_expr,k))
            },
            debCAM = {
-             result = list(refFree_debCAM = deconv_refFree_debCAM(bulk_expr,k,corner.strategy, dim.rdc,
+             result = list(RefFree_debCAM = deconv_refFree_debCAM(bulk_expr,k,corner.strategy, dim.rdc,
                                                                   thres.low, thres.high, cluster.method, cluster.num, MG.num.thres,
                                                                   lof.thres, quickhull, quick.select,
                                                                   sample.weight, appro3, generalNMF,

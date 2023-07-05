@@ -21,8 +21,8 @@ Depends:
     caret,
     Biobase,
     ggplot2,
-    viridis,
-    data.table
+    data.table,
+    reshape2
 Suggests: 
     nnls,
     immunedeconv,
@@ -43,4 +43,7 @@ Suggests:
     linseed,
     TCGAbiolinks,
     InstaPrism,
-    scran
+    scran,
+    msigdbr,
+    ComplexHeatmap,
+    viridis

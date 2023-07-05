@@ -116,5 +116,31 @@ get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
 }
 
 
+msigdbr_to_list = function(res){
+  gs_names = unique(res$gs_name)
+  gs_list = list()
+  for(gs_name in gs_names){
+    gs_list[[gs_name]] = res$gene_symbol[res$gs_name ==gs_name] %>% stringr::str_to_upper()
+  }
+  return(gs_list)
+}
+
+genelist_cv=function(genelist,simulator_Statistics_res){
+  summary_stats = simulator_Statistics_res$summary_stats
+  summary_stats$gene = stringr::str_to_upper(summary_stats$gene)
+
+  involved_genes=do.call(c,genelist)
+  involved_genes=involved_genes[!duplicated(involved_genes)]
+  involved_genes=unname(involved_genes)
+
+  df=summary_stats[summary_stats$gene %in% involved_genes,]
+
+  avg_cv_long=do.call(rbind,lapply(genelist,function(x)(df[df$gene %in% x,] %>% group_by(class) %>% summarise(avg_cv=mean(cv,na.rm=T)))))
+  avg_cv_long$genelist_name=sub("\\..*","",rownames(avg_cv_long))
+  avg_cv_long = data.frame(avg_cv_long)
+
+  return(avg_cv_long)
+}
+
 
 

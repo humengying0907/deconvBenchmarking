@@ -4,10 +4,13 @@
 \alias{benchmarking_evalu}
 \title{Evaluate deconvolution performance}
 \usage{
-benchmarking_evalu(deconvResults_obj)
+benchmarking_evalu(deconvResults_obj, nonzero_threshold = 0.05)
 }
 \arguments{
 \item{deconvResults_obj}{a deconvResults_obj returned from deconvResults_obj() function}
+
+\item{nonzero_threshold}{The threshold percentage of non-zero count in the simulated fraction. Only cell types with a non-zero count percentage equal to
+or higher than this threshold will be included for comparing their deconvolution performance.}
 }
 \value{
 a list of performance evaluation statistics including per-cell type correlation and RMSE values, specified for each simulated bulk expression

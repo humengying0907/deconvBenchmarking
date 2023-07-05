@@ -15,7 +15,7 @@ simulator_Statistics(
 \arguments{
 \item{bulkSimulator_res}{a list of simulated bulk object from bulkSimulator() function}
 
-\item{baseline_expr}{a real bulk expression matrix to compare against, with genes in rows and samples in columns}
+\item{baseline_expr}{a real bulk expression matrix to compare against, with genes in rows and samples in columns.}
 
 \item{var.genes}{genes used to calculate gene-wise correlation and sample-wise correlation. If NULL, will automatically
 choose top most variable genes from baseline_expr as var.genes}
@@ -25,8 +25,9 @@ choose top most variable genes from baseline_expr as var.genes}
 \item{n.core}{number of cores to use for parallel programming. Default = 1.}
 }
 \value{
-a list of summary statistics for the simulated and real bulk expression. The list includes summary statistics such as
-mean, variance, coefficient of variation (CV), Median Absolute Deviation (MAD), as well as gene-wise and sample-wise pairwise correlations.
+a list of summary statistics for the simulated and real bulk expression. The list includes a summary statistics table that consist of
+the mean, variance, coefficient of variation (CV), and Median Absolute Deviation (MAD) for all genes.
+It also provides gene-wise and sample-wise pairwise correlations for var.genes.
 }
 \description{
 Calculate summary statistics for simulated and real bulk expression

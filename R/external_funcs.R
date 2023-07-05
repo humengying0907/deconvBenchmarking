@@ -90,6 +90,9 @@ marker.fc <- function(fit2, cont.matrix, log2.threshold = 1, output_name = "mark
   AveExpr_pval <- topTable_RESULTS[,(ncol(topTable_RESULTS)-3):ncol(topTable_RESULTS)]
   topTable_RESULTS <- topTable_RESULTS[,1:(ncol(topTable_RESULTS)-4)]
 
+  # since limma::topTable applies make.names() automatically to column names, reverse the names back to original format
+  colnames(topTable_RESULTS) = colnames(cont.matrix)
+
   if(length(grep("ERCC-",topTable_RESULTS$gene)) > 0){ topTable_RESULTS <- topTable_RESULTS[-grep("ERCC-",topTable_RESULTS$gene),] }
 
   markers <- apply(topTable_RESULTS,1,function(x){

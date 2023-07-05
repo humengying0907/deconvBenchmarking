@@ -4,10 +4,12 @@
 \alias{refMarkers_sigMatrixList}
 \title{Obtain cell-type specific markers from a list of signature matrices}
 \usage{
-refMarkers_sigMatrixList(sigMatrixList, maximum_n = 50)
+refMarkers_sigMatrixList(sigMatrixList, minimum_n = 15, maximum_n = 50)
 }
 \arguments{
 \item{sigMatrixList}{a list of signature matrices}
+
+\item{minimum_n}{minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' marker genes, it will be excluded from the marker list}
 
 \item{maximum_n}{maximum number of marker genes of a cell-type}
 }

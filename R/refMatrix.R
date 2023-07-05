@@ -21,9 +21,7 @@ refMatrix_raw = function(scExpr, cell_type_labels){
 #' @param hv_genes a character vector containing the names of high-variable genes. scExpr will be pre-filtered based on the provided hv_genes to reduce computation time during the differential expression (DE) analysis.
 #'    If set to NULL, the function will automatically select genes with specificity score passing 'max.spec_cutoff_for_DE' threshold as hv_genes
 #' @param log2FC log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.
-#' @param log2FC_flexible a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-#'    all the genes that pass the threshold will be considered as marker genes.
-#' @param minimum_n minimum number of marker genes for a cell-type
+#' @param minimum_n minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' genes passing the log2FC threshold, it will be excluded from the marker list
 #' @param maximum_n maximum number of marker genes of a cell-type
 #' @param max.spec_cutoff_for_DE specificity score threshold to select for hv_genes. Default = 0.3
 #'
@@ -33,7 +31,7 @@ refMatrix_limma = function(scExpr,cell_type_labels, hv_genes=NULL,
                            log2FC=2, log2FC_flexible = 1, minimum_n=15,maximum_n=50,
                            max.spec_cutoff_for_DE = 0.3){
   limma_markers = refMarkers_limma(scExpr,cell_type_labels, hv_genes,
-                                   log2FC, log2FC_flexible, minimum_n,maximum_n,
+                                   log2FC, minimum_n, maximum_n,
                                    max.spec_cutoff_for_DE)
   C = build_ref_matrix(scExpr,cell_type_labels)
   sig_genes = do.call(c,limma_markers)
@@ -53,20 +51,21 @@ refMatrix_limma = function(scExpr,cell_type_labels, hv_genes=NULL,
 #' @param hv_genes a character vector containing the names of high-variable genes. scExpr will be pre-filtered based on the provided hv_genes to reduce computation time during the differential expression (DE) analysis.
 #'    If set to NULL, the function will automatically select genes with specificity score passing 'max.spec_cutoff_for_DE' threshold as hv_genes
 #' @param log2FC log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.
-#' @param log2FC_flexible a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-#'    all the genes that pass the threshold will be considered as marker genes.
-#' @param minimum_n minimum number of marker genes for a cell-type
+#' @param minimum_n minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' genes passing the log2FC threshold, it will be excluded from the marker list
 #' @param maximum_n maximum number of marker genes of a cell-type
+#' @param order_by a character specifying the criteria for ordering DE genes. Available options include 'pval' and 'min.lfc'. When more than 'maximum_n' genes pass the logFC threshold,
+#'    markers will be selected from the top 'maximum_n' genes ordered by this criterion. Default = 'pval'.
 #' @param max.spec_cutoff_for_DE specificity score threshold to select for hv_genes. Default = 0.3
 #'
 #' @return a signature matrix with genes in rows and cell-types in columns
 #' @export
 refMatrix_scran = function(scExpr,cell_type_labels,cell_state_labels = NULL,hv_genes = NULL,
                            log2FC=2, log2FC_flexible = 1, minimum_n = 15,maximum_n = 50,
+                           order_by = 'pval',
                            max.spec_cutoff_for_DE = 0.3){
   scran_markers = refMarkers_scran(scExpr,cell_type_labels,cell_state_labels,hv_genes ,
-                                   log2FC, log2FC_flexible, minimum_n,maximum_n,
-                                   max.spec_cutoff_for_DE)
+                                   log2FC, minimum_n, maximum_n,
+                                   order_by,max.spec_cutoff_for_DE)
   C = build_ref_matrix(scExpr,cell_type_labels)
   sig_genes = do.call(c,scran_markers)
   matrix_scran = C[sig_genes,]
@@ -109,10 +108,10 @@ refMatrix_markerList = function(scExpr, cell_type_labels,markerList){
 #' @param hv_genes a character vector containing the names of high-variable genes. scExpr will be pre-filtered based on the provided hv_genes to reduce computation time during the differential expression (DE) analysis.
 #'    If set to NULL, the function will automatically select genes with specificity score passing 'max.spec_cutoff_for_DE' threshold as hv_genes. This argument is required for method 'limma' and 'scran'
 #' @param log2FC log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold. This argument is required for method 'limma' and 'scran'
-#' @param log2FC_flexible a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-#'    all the genes that pass the threshold will be considered as marker genes. This argument is required for method 'limma' and 'scran'
 #' @param minimum_n minimum number of marker genes for a cell-type. This argument is required for method 'limma' and 'scran'
 #' @param maximum_n maximum number of marker genes of a cell-type. This argument is required for method 'limma' and 'scran'
+#' @param order_by a character specifying the criteria for ordering DE genes from scran analysis. Available options include 'pval' and 'min.lfc'. When more than 'maximum_n' genes pass the logFC threshold,
+#'    markers will be selected from the top 'maximum_n' genes ordered by this criterion. Default = 'pval'. This argument is required for 'scran' method only.
 #' @param max.spec_cutoff_for_DE specificity score threshold to select for hv_genes. Default = 0.3. This argument is required for method 'limma' and 'scran'
 #' @param markerList a list of pre-calculated cell-type marker list, where the first level of this list represents different methods used to derive cell-type specific markers, and the second level
 #'    comprises the actual cell-type specific genes identified by each method. This argument is required for 'markerList' method
@@ -127,7 +126,8 @@ refMatrix_markerList = function(scExpr, cell_type_labels,markerList){
 refMatrix = function(methods,
                      scExpr,cell_type_labels,
                      cell_state_labels = NULL,hv_genes = NULL,
-                     log2FC = 2, log2FC_flexible = 1, minimum_n = 15,maximum_n = 50,
+                     log2FC = 2, minimum_n = 15,maximum_n = 50,
+                     order_by = 'pval',
                      max.spec_cutoff_for_DE = 0.3, markerList = NULL){
 
   l = list_refMarix(show_description=T)
@@ -143,13 +143,13 @@ refMatrix = function(methods,
            },
            limma = {
              result = list('limma' = refMatrix_limma(scExpr,cell_type_labels, hv_genes,
-                                                      log2FC, log2FC_flexible, minimum_n,maximum_n,
+                                                      log2FC, minimum_n, maximum_n,
                                                       max.spec_cutoff_for_DE))
            },
            scran = {
-             result = list('scran' = refMatrix_scran(scExpr,cell_type_labels,cell_state_labels,hv_genes,
-                                                      log2FC, log2FC_flexible, minimum_n,maximum_n,
-                                                      max.spec_cutoff_for_DE))
+             result = list('scran' = refMatrix_scran(scExpr,cell_type_labels,cell_state_labels, hv_genes,
+                                                     log2FC, minimum_n, maximum_n,
+                                                     order_by, max.spec_cutoff_for_DE))
            },
            markerList = {
              result = refMatrix_markerList(scExpr, cell_type_labels, markerList)
@@ -185,8 +185,8 @@ refMatrix = function(methods,
 pre_refMatrix_autogeneS <- function(scExpr, cell_type_labels, hv_genes = NULL, max.spec_cutoff_for_autogeneS = 0.5, autogeneS_input_file_name = NULL,
                                     display_autogeneS_command = T, ngen = 5000, seed = 0, nfeatures = 400, mode = 'fixed'){
   if(is.null(autogeneS_input_file_name)){
-    autogeneS_input_file_name = 'centroids_sc_hv'
-    warning('autogeneS_input_file_name is default to centroids_sc_hv.csv')
+    autogeneS_input_file_name = 'autogeneS_input'
+    warning('autogeneS_input_file_name is default to autogeneS_input.csv')
   }
 
   if(is.null(hv_genes)){
@@ -286,12 +286,12 @@ pre_refMatrix_cibersortx <- function(scExpr, cell_type_labels,
       downsampled_id = match(downsampled_cell,colnames(scExpr))
     }
     sc_raw = scExpr[,downsampled_id]
-    colnames(sc_raw)=cell_type_labels[downsampled_id]
-    sc_raw=cbind(data.frame(GeneSymbol=rownames(sc_raw)),sc_raw)
+    colnames(sc_raw) = cell_type_labels[downsampled_id]
+    sc_raw = cbind(data.frame(GeneSymbol=rownames(sc_raw)),sc_raw)
     write.table(sc_raw,file = paste0('cibersortx_input/',cibersortx_input_file_name,'.txt'),sep = '\t',row.names = F)
   }else{
     sc_raw = scExpr
-    colnames(scExpr) = cell_type_labels
+    colnames(sc_raw) = cell_type_labels
     sc_raw=cbind(data.frame(GeneSymbol=rownames(sc_raw)),sc_raw)
     write.table(sc_raw,file = paste0('cibersortx_input/',cibersortx_input_file_name,'.txt'),sep = '\t',row.names = F)
   }

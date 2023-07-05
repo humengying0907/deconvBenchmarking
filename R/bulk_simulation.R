@@ -306,7 +306,7 @@ heter_aggregate<-function(ID,simulated_frac,scExpr,scMeta,colnames_of_cellType,
   }
 
 
-  scMeta_final = scMeta[p,]
+  scMeta_final = scMeta_renamed[p,]
   group = list()
   for(ct in cellType_component){
     group[[ct]] <- rownames(scMeta_final)[scMeta_final$cell_type == ct]

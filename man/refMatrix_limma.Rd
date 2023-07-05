@@ -25,10 +25,7 @@ If set to NULL, the function will automatically select genes with specificity sc
 
 \item{log2FC}{log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.}
 
-\item{log2FC_flexible}{a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-all the genes that pass the threshold will be considered as marker genes.}
-
-\item{minimum_n}{minimum number of marker genes for a cell-type}
+\item{minimum_n}{minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' genes passing the log2FC threshold, it will be excluded from the marker list}
 
 \item{maximum_n}{maximum number of marker genes of a cell-type}
 

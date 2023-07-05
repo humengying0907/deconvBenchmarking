@@ -11,9 +11,9 @@ refMatrix(
   cell_state_labels = NULL,
   hv_genes = NULL,
   log2FC = 2,
-  log2FC_flexible = 1,
   minimum_n = 15,
   maximum_n = 50,
+  order_by = "pval",
   max.spec_cutoff_for_DE = 0.3,
   markerList = NULL
 )
@@ -33,12 +33,12 @@ If set to NULL, the function will automatically select genes with specificity sc
 
 \item{log2FC}{log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold. This argument is required for method 'limma' and 'scran'}
 
-\item{log2FC_flexible}{a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-all the genes that pass the threshold will be considered as marker genes. This argument is required for method 'limma' and 'scran'}
-
 \item{minimum_n}{minimum number of marker genes for a cell-type. This argument is required for method 'limma' and 'scran'}
 
 \item{maximum_n}{maximum number of marker genes of a cell-type. This argument is required for method 'limma' and 'scran'}
+
+\item{order_by}{a character specifying the criteria for ordering DE genes from scran analysis. Available options include 'pval' and 'min.lfc'. When more than 'maximum_n' genes pass the logFC threshold,
+markers will be selected from the top 'maximum_n' genes ordered by this criterion. Default = 'pval'. This argument is required for 'scran' method only.}
 
 \item{max.spec_cutoff_for_DE}{specificity score threshold to select for hv_genes. Default = 0.3. This argument is required for method 'limma' and 'scran'}
 

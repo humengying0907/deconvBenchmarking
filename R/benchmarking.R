@@ -254,8 +254,8 @@ benchmarking_init = function(scExpr,scMeta,
   fracSimulator_Beta_args = arg_list[names(arg_list) %in% c('min.frac','showFractionPlot')]
   bulkSimulator_args = arg_list[names(arg_list) %in% c('ncells_perSample','min_chunkSize','use_chunk','min.percentage','max.percentage',
                                                        'seed','use_simulated_frac_as_prop_mat','disease','ct.sub','samplewithRep')]
-  refMarkers_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','log2FC_flexible','minimum_n','maximum_n','spec_cutoff_for_DE','sigMatrixList')]
-  refMatrix_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','log2FC_flexible','minimum_n','maximum_n','spec_cutoff_for_DE','markerList ')]
+  refMarkers_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','spec_cutoff_for_DE','sigMatrixList')]
+  refMatrix_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','order_by','spec_cutoff_for_DE','markerList')]
   pre_refMatrix_autogeneS_args = arg_list[names(arg_list) %in% c('hv_genes','max.spec_cutoff_for_autogeneS','display_autogeneS_command','ngen',
                                                                  'seed','nfeatures','mode')]
   pre_refMatrix_cibersortx_args = arg_list[names(arg_list) %in% c('downsample','downsample_ratio')]
@@ -748,6 +748,8 @@ benchmarking_deconv = function(benchmarking_obj,
 #' Evaluate deconvolution performance
 #' @description This function evaluates deconvolution performance on the deconvResults_obj returned from benchmarking_deconv() function.
 #' @param deconvResults_obj a deconvResults_obj returned from deconvResults_obj() function
+#' @param nonzero_threshold The threshold percentage of non-zero count in the simulated fraction. Only cell types with a non-zero count percentage equal to
+#'    or higher than this threshold will be included for comparing their deconvolution performance.
 #'
 #' @return a list of performance evaluation statistics including per-cell type correlation and RMSE values, specified for each simulated bulk expression
 #' @export
@@ -830,7 +832,7 @@ benchmarking_deconv = function(benchmarking_obj,
 #' # evaluate the performance of each deconvolution methods:
 #' benchmarking_evalu(deconvResults_obj)
 #' }
-benchmarking_evalu = function(deconvResults_obj){
+benchmarking_evalu = function(deconvResults_obj, nonzero_threshold = 0.05){
 
   get_maxCor = function(x){
     return(x$summ$cor)
@@ -846,6 +848,11 @@ benchmarking_evalu = function(deconvResults_obj){
     Y = deconvResults_obj[[bulk]]$true_frac
     Y = Y[,order(colnames(Y)),drop = F]
 
+    # Only cell types with a non-zero count ratio equal to or higher than 'nonzero_ratios' will be included for comparing their deconvolution performance.
+    nonzero_ratios = colSums(Y>0, na.rm = T)/nrow(Y)
+    ct_to_evalu = names(nonzero_ratios)[nonzero_ratios >= nonzero_threshold]
+    Y_ = Y[,ct_to_evalu,drop = F]
+
     bulk_performance = list()
 
     # detailed per-method evaluation statistics
@@ -855,33 +862,46 @@ benchmarking_evalu = function(deconvResults_obj){
       E = deconvResults_obj[[bulk]]$deconvRes[[method]]
       E = E[,order(colnames(E)),drop = F]
 
-      if(ncol(Y) != ncol(E)){
-        # find max-correlated column in deconRes for each cell type
+      if(ncol(Y) == ncol(E)){
+        if(all(colnames(Y) == colnames(E))){
+          # modify E according to nonzero_threshold if it contains the exact set of cell types as the true_frac
+          E = E[,ct_to_evalu,drop = F]
+        }else{
+          # find cell types that exhibit the highest correlation with true_frac in Y_
+          maxCorName = c()
+          for(ct in colnames(Y_)){
+            id = apply(cor(E,Y_[,ct],use = 'pairwise.complete.obs'),2,which.max)
+            maxCorName = c(maxCorName, colnames(E)[id])
+          }
+
+          E = E[,maxCorName,drop = F]
+          colnames(E) = make.unique(colnames(E))
+        }
+      }else if(all(colnames(E) %in% colnames(Y))){
+        # consider marker based methods when specific cell types are excluded because no enough number of markers pass the minimum_n threshold
+        # report these cell types as NA in the performance export
+        E = E[,colnames(E) %in% ct_to_evalu, drop = F]
+        missing_ct = ct_to_evalu[!ct_to_evalu %in% colnames(E)]
+
+        if(length(missing_ct)>0){
+          empty_matrix = matrix(NA,ncol = length(missing_ct),nrow = nrow(E),dimnames = list(rownames(E),missing_ct))
+          E = cbind(E,empty_matrix)
+          E = E[,order(colnames(E)),drop = F]
+        }
+
+      }else{
+        # consider other deconvolution methods
         maxCorName = c()
-        for(ct in colnames(Y)){
-          id = apply(cor(E,Y[,ct],use = 'pairwise.complete.obs'),2,which.max)
+        for(ct in colnames(Y_)){
+          id = apply(cor(E,Y_[,ct],use = 'pairwise.complete.obs'),2,which.max)
           maxCorName = c(maxCorName, colnames(E)[id])
         }
 
         E = E[,maxCorName,drop = F]
         colnames(E) = make.unique(colnames(E))
-      }else{
-        if(all.equal(colnames(Y),colnames(E)) == F){
-          # find max-correlated column in deconRes for each cell type
-          maxCorName = c()
-          for(ct in colnames(Y)){
-            id = apply(cor(E,Y[,ct],use = 'pairwise.complete.obs'),2,which.max)
-            maxCorName = c(maxCorName, colnames(E)[id])
-          }
-
-          E = E[,maxCorName, drop = F]
-          colnames(E) = make.unique(colnames(E))
-        }else{
-          E = E
-        }
       }
 
-      m1 = gather(Y %>% as.data.frame(),cell_type,true_frac)
+      m1 = gather(Y_ %>% as.data.frame(),cell_type,true_frac)
       m2 = gather(E %>% as.data.frame(),maxCorName,estimate)
       M = cbind(m1,m2)
 
@@ -895,19 +915,22 @@ benchmarking_evalu = function(deconvResults_obj){
 
       summ$maxCorName = M$maxCorName[match(rownames(summ),M$cell_type)]
       deconvEvalu[[method]] = list(M = M, summ = summ)
+
     }
 
 
     bulk_performance$maxCor = do.call(cbind, lapply(deconvEvalu,get_maxCor))
-    rownames(bulk_performance$maxCor) = colnames(Y)
+    rownames(bulk_performance$maxCor) = colnames(Y_)
 
     bulk_performance$RMSE = do.call(cbind, lapply(deconvEvalu,get_RMSE))
-    rownames(bulk_performance$RMSE) = colnames(Y)
+    rownames(bulk_performance$RMSE) = colnames(Y_)
 
     bulk_performance$deconvEvalu = deconvEvalu
 
 
     deconvPerformance[[bulk]] = bulk_performance
+    message(paste('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> finish performance evaluation for',bulk,'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'))
+
   }
 
   return(deconvPerformance)

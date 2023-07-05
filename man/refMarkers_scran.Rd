@@ -10,9 +10,9 @@ refMarkers_scran(
   cell_state_labels = NULL,
   hv_genes = NULL,
   log2FC = 2,
-  log2FC_flexible = 1,
   minimum_n = 15,
   maximum_n = 50,
+  order_by = "pval",
   max.spec_cutoff_for_DE = 0.3
 )
 }
@@ -29,12 +29,12 @@ If set to NULL, the function will automatically select genes with specificity sc
 
 \item{log2FC}{log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.}
 
-\item{log2FC_flexible}{a flexible log fold change threshold to select marker genes. If there are fewer than 'minimum_n' genes that pass the 'log2FC_flexible' threshold,
-all the genes that pass the threshold will be considered as marker genes.}
-
-\item{minimum_n}{minimum number of marker genes for a cell-type}
+\item{minimum_n}{minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' genes passing the log2FC threshold, it will be excluded from the marker list}
 
 \item{maximum_n}{maximum number of marker genes of a cell-type}
+
+\item{order_by}{a character specifying the criteria for ordering DE genes. Available options include 'pval' and 'min.lfc'. When more than 'maximum_n' genes pass the logFC threshold,
+markers will be selected from the top 'maximum_n' genes ordered by this criterion. Default = 'pval'.}
 
 \item{max.spec_cutoff_for_DE}{specificity score threshold to select for hv_genes. Default = 0.3}
 }

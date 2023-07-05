@@ -61,7 +61,7 @@ the first principal component will not forced to be along c(1,1,..,1) but a stan
 \item{cores}{The number of system cores for parallel computing. If not provided, one core for each element in K will be invoked. Zero value will disable parallel computing.}
 }
 \value{
-a list of deconvolution results obtained using different reference free methods. The results are named using the format 'refFree_' + method
+a list of deconvolution results obtained using different reference free methods. The results are named using the format 'RefFree_' + method
 }
 \description{
 Reference free deconvolution
