@@ -29,7 +29,7 @@ plot_variance_comparison(
 \item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
 The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
 
-\item{...}{additional arguments to pass to ggpointdensity()}
+\item{...}{additional arguments to pass to theme()}
 }
 \value{
 a panel of ggpointdensity plots comparing variance in each simulated bulk with real bulk expression

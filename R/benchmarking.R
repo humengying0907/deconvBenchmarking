@@ -937,4 +937,21 @@ benchmarking_evalu = function(deconvResults_obj, nonzero_threshold = 0.05){
 }
 
 
-
+#' Summarize deconvolution performance in a long table
+#'
+#' @param deconvPerformance a deconvPerformance object returned from benchmarking_evalu() function
+#'
+#' @return a dataframe summarizing the deconvolution performance per deconvolution method and simulation method
+#' @export
+gather_performance = function(deconvPerformance){
+  quick_gather = function(name, deconvPerformance){
+    deconvEvalu = deconvPerformance[[name]][['deconvEvalu']]
+    extract_summ = function(method){
+      l = deconvEvalu[[method]][['summ']] %>% as.data.frame()  %>% rownames_to_column('cell_type') %>% mutate(method = method)
+      return(l)
+    }
+    out = do.call(rbind,lapply(names(deconvEvalu),extract_summ)) %>% mutate(class = name)
+  }
+  out = do.call(rbind,lapply(names(deconvPerformance),quick_gather,deconvPerformance))
+  return(out)
+}

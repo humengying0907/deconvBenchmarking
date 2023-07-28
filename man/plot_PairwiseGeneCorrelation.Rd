@@ -18,9 +18,9 @@ plot_PairwiseGeneCorrelation(
 \item{nrow_panel}{nrow of the ggplot panels}
 
 \item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
-The default order is specified as c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
+The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
 
-\item{...}{additional arguments to pass to geom_tile()}
+\item{...}{additional arguments to pass to theme()}
 }
 \value{
 a panel of heatmaps showing pairwise gene correlations

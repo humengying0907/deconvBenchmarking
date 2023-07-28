@@ -9,6 +9,8 @@ simulator_Statistics(
   baseline_expr = NULL,
   var.genes = NULL,
   top_n_variable = 300,
+  gene_cor_method = "pearson",
+  sample_cor_method = "pearson",
   n.core = 1
 )
 }
@@ -21,6 +23,10 @@ simulator_Statistics(
 choose top most variable genes from baseline_expr as var.genes}
 
 \item{top_n_variable}{a numeric value indicating the number of top variable genes to be selected. Required when var.genes = NULL}
+
+\item{gene_cor_method}{a character string passing to cor() function, indicating which correlation coefficient to be computed for gene-wise correlation. Default = 'pearson'}
+
+\item{sample_cor_method}{a character string passing to cor() function, indicating which correlation coefficient to be computed for sample-wise correlation. Default = 'pearson'}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1.}
 }
