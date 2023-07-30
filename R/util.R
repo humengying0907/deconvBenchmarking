@@ -55,7 +55,27 @@ tumor_purity <-function(tcga_barcodes){
   rownames(purity) = NULL
   purity = purity %>% column_to_rownames('Sample.ID')
 
+  purity = append_ABSOLUTE_pancanatlas(purity)
   return(purity)
+}
+
+append_ABSOLUTE_pancanatlas = function(tumor_purity_table,ABSOLUTE_pancanatlas = NULL){
+  if(is.null(ABSOLUTE_pancanatlas)){
+    ABSOLUTE_pancanatlas = read.delim('http://api.gdc.cancer.gov/data/4f277128-f793-4354-a13d-30cc7fe9f6b5')
+  }
+
+  tumor_purity_table = as.data.frame(tumor_purity_table)
+  find_rowID = function(barcode){
+    id = which(grepl(barcode,ABSOLUTE_pancanatlas$sample))
+    if(length(id)<1){
+      return(NA)
+    }else{
+      return(id)
+    }
+  }
+
+  tumor_purity_table$ABSOLUTE_GDC = ABSOLUTE_pancanatlas$purity[do.call(c,lapply(rownames(tumor_purity_table),find_rowID))]
+  return(tumor_purity_table)
 }
 
 

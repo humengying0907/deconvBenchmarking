@@ -7,8 +7,7 @@
 plot_MeanVariance(
   simulator_Statistics_res,
   genes_to_evalu = NULL,
-  desired_order = c("baseline", "homo", "semi", "heter", "heter_sampleIDfree",
-    "favilaco", "immunedeconv", "SCDC"),
+  desired_order = NULL,
   ylim = c(0, 20),
   ybreaks = seq(0, 20, 5),
   ...
@@ -19,8 +18,7 @@ plot_MeanVariance(
 
 \item{genes_to_evalu}{genes to visualize. If set to NULL, will compare all the genes in simulator_Statistics_res}
 
-\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
-The default order is specified as c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
+\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.}
 
 \item{ylim}{scale_y_continuous() "limits" parameter. Default = c(0,20)}
 

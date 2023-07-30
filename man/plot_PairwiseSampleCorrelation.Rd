@@ -4,17 +4,12 @@
 \alias{plot_PairwiseSampleCorrelation}
 \title{Plot sample wise correlations in simulated bulk and real bulk}
 \usage{
-plot_PairwiseSampleCorrelation(
-  simulator_Statistics_res,
-  desired_order = c("baseline", "homo", "semi", "heter", "heter_sampleIDfree",
-    "favilaco", "immunedeconv", "SCDC")
-)
+plot_PairwiseSampleCorrelation(simulator_Statistics_res, ...)
 }
 \arguments{
 \item{simulator_Statistics_res}{a list of summary statistics returned from simulator_Statistics() function}
 
-\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
-The default order is specified as c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
+\item{...}{additional arguments to pass to theme()}
 }
 \value{
 a panel of boxplot showing the distribution of sample-wise correlations

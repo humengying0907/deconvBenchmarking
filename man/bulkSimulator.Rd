@@ -18,6 +18,7 @@ bulkSimulator(
   use_chunk = "all",
   dirichlet_cs_par = 0.1,
   min.subcluster.size = 20,
+  max.num.cs = NA,
   min.percentage = 1,
   max.percentage = 99,
   nbulk = 100,
@@ -59,6 +60,8 @@ when use_chunk = 'random', randomly select 50-100\% of the cells belonging to th
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' method.}
 
 \item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' method only.}
+
+\item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.}
 
 \item{min.percentage}{minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'}
 

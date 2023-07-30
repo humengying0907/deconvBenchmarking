@@ -7,8 +7,7 @@
 plot_PairwiseGeneCorrelation(
   simulator_Statistics_res,
   nrow_panel = 2,
-  desired_order = c("baseline", "homo", "semi", "heter", "heter_sampleIDfree",
-    "favilaco", "immunedeconv", "SCDC"),
+  desired_order = NULL,
   ...
 )
 }
@@ -17,8 +16,7 @@ plot_PairwiseGeneCorrelation(
 
 \item{nrow_panel}{nrow of the ggplot panels}
 
-\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
-The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
+\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.}
 
 \item{...}{additional arguments to pass to theme()}
 }

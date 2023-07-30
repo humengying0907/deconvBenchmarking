@@ -39,6 +39,7 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   heter_cell_type = 'malignant',
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
+                  max.num.cs = NA,
 
                   # argument for marker constructions
                   refMarkers_methods = c('limma','scran'),
@@ -49,11 +50,11 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   # arguments to include tcga
                   include_tcga = T,
                   tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
+                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 
                   # export files for autogeneS and cibersortx
                   create_autogeneS_input = T,
-                  create_cibersortx_input = T
+                  create_cibersortx_input = T,
 
                   n.core = 4
                   )

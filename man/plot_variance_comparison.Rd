@@ -10,8 +10,7 @@ plot_variance_comparison(
   variance_type = "cv",
   nrow_panel = 1,
   axis_limit = 5,
-  desired_order = c("homo", "semi", "heter", "heter_sampleIDfree", "favilaco",
-    "immunedeconv", "SCDC"),
+  desired_order = NULL,
   ...
 )
 }
@@ -26,8 +25,7 @@ plot_variance_comparison(
 
 \item{axis_limit}{axis_limit in the variance comparison plot}
 
-\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure.
-The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')}
+\item{desired_order}{a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.}
 
 \item{...}{additional arguments to pass to theme()}
 }

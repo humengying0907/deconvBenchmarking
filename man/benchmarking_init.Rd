@@ -19,12 +19,13 @@ benchmarking_init(
   heter_cell_type = NA,
   dirichlet_cs_par = 0.1,
   min.subcluster.size = 20,
+  max.num.cs = NA,
   refMarkers_methods = c("limma", "scran"),
   colnames_of_cellState = NA,
   refMatrix_methods = c("raw", "limma", "scran"),
   include_tcga = F,
   tcga_abbreviation = NA,
-  purity_methods = c("ESTIMATE", "ABSOLUTE", "LUMP", "IHC", "CPE"),
+  purity_methods = c("ESTIMATE", "ABSOLUTE", "LUMP", "IHC", "CPE", "ABSOLUTE_GDC"),
   create_autogeneS_input = F,
   autogeneS_input_file_name = NULL,
   create_cibersortx_input = F,
@@ -72,6 +73,8 @@ This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation me
 
 \item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.}
 
+\item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.}
+
 \item{refMarkers_methods}{a character vector specifying the desired methods for generating cell-type specific markers. Use \code{\link{list_refMarkers}} to check for available method names and suggested packages associated them.
 Make sure you have the required packages installed to use these methods}
 
@@ -87,7 +90,8 @@ Make sure you have the required packages installed to use these methods}
 \item{tcga_abbreviation}{a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'}
 
 \item{purity_methods}{a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE', Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T}
+Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
+Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T}
 
 \item{create_autogeneS_input}{a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
 will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters}
@@ -141,6 +145,7 @@ benchmarking_init(scExpr = scExpr,
                   heter_cell_type = 'malignant',
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
+                  max.num.cs = NA,
 
                   # argument for marker constructions
                   refMarkers_methods = c('limma','scran'),
@@ -151,11 +156,11 @@ benchmarking_init(scExpr = scExpr,
                   # arguments to include tcga
                   include_tcga = T,
                   tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE'),
+                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 
                   # export files for autogeneS and cibersortx
                   create_autogeneS_input = T,
-                  create_cibersortx_input = T
+                  create_cibersortx_input = T,
 
                   n.core = 4
                   )
@@ -182,7 +187,7 @@ benchmarking_init(scExpr = scExpr,
                   # arguments to include tcga
                   include_tcga = T,
                   tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE')
+                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC')
                   )
 }
 }

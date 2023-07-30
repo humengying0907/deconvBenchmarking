@@ -158,15 +158,14 @@ simulator_averageCV = function(simulator_Statistics_res, genelist = NULL, msigdb
 #' @param variance_type a string indicating type of variance to compare. Available options including "cv" and "MAD". Deafult = "cv"
 #' @param nrow_panel nrow of the ggplot panels
 #' @param axis_limit axis_limit in the variance comparison plot
-#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure.
-#'    The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')
+#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.
 #' @param ... additional arguments to pass to theme()
 #'
 #' @return a panel of ggpointdensity plots comparing variance in each simulated bulk with real bulk expression
 #' @export
 plot_variance_comparison = function(simulator_Statistics_res, genes_to_evalu = NULL, variance_type = 'cv',
                                     nrow_panel = 1,axis_limit = 5,
-                                    desired_order = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                                    desired_order = NULL,
                                     ...){
 
   summary_stats = simulator_Statistics_res$summary_stats
@@ -187,7 +186,9 @@ plot_variance_comparison = function(simulator_Statistics_res, genes_to_evalu = N
   colnames(df)[2] = 'variance_simulatedExpr'
   df$variance_baselineExpr = rep(summary_stats_baselineExpr[,variance_type],length(unique(summary_stats_simulatedExpr$class)))
 
-  df$class = factor(df$class,levels = desired_order)
+  if(!is.null(desired_order)){
+    df$class = factor(df$class,levels = desired_order)
+  }
 
   ggplot(df,aes(variance_baselineExpr,variance_simulatedExpr))+
     geom_pointdensity(size = 0.1)+
@@ -206,14 +207,13 @@ plot_variance_comparison = function(simulator_Statistics_res, genes_to_evalu = N
 #'
 #' @param simulator_Statistics_res a list of summary statistics returned from simulator_Statistics() function
 #' @param nrow_panel nrow of the ggplot panels
-#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure.
-#'    The default order is specified as c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')
+#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.
 #' @param ... additional arguments to pass to theme()
 #'
 #' @return a panel of heatmaps showing pairwise gene correlations
 #' @export
 plot_PairwiseGeneCorrelation = function(simulator_Statistics_res, nrow_panel = 2,
-                                        desired_order = c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                                        desired_order = NULL,
                                         ...){
 
   gene_cor = simulator_Statistics_res$gene_correlation
@@ -229,7 +229,9 @@ plot_PairwiseGeneCorrelation = function(simulator_Statistics_res, nrow_panel = 2
   cor_dat$class = sub("\\..*","",rownames(cor_dat))
   rownames(cor_dat) = NULL
 
-  cor_dat$class = factor(cor_dat$class,levels = desired_order)
+  if(!is.null(desired_order)){
+    cor_dat$class = factor(cor_dat$class,levels = desired_order)
+  }
 
   ggplot(cor_dat, aes(Var2, Var1, fill = value))+
     facet_wrap(~class, nrow = nrow_panel) +
@@ -250,13 +252,11 @@ plot_PairwiseGeneCorrelation = function(simulator_Statistics_res, nrow_panel = 2
 #' Plot sample wise correlations in simulated bulk and real bulk
 #'
 #' @param simulator_Statistics_res a list of summary statistics returned from simulator_Statistics() function
-#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure.
-#'    The default order is specified as c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')
+#' @param ... additional arguments to pass to theme()
 #'
 #' @return a panel of boxplot showing the distribution of sample-wise correlations
 #' @export
-plot_PairwiseSampleCorrelation = function(simulator_Statistics_res,
-                                          desired_order = c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')){
+plot_PairwiseSampleCorrelation = function(simulator_Statistics_res,...){
   sample_cor = simulator_Statistics_res$sample_correlation
   sample_cor = lapply(sample_cor,function(x){
     x = x[lower.tri(x,diag = F)]
@@ -264,16 +264,34 @@ plot_PairwiseSampleCorrelation = function(simulator_Statistics_res,
 
   cor_dat = data.frame(cor = unlist(sample_cor) %>% unname(),
                        class = rep(names(sample_cor),lengths(sample_cor)))
+  yh = mean(cor_dat$cor[cor_dat$class == 'baseline'])
 
-  cor_dat$class = factor(cor_dat$class,levels = desired_order)
+  cor_dat = cor_dat[cor_dat$class!= 'baseline',]
 
-  ggplot(cor_dat,aes(class,cor))+
-    geom_boxplot(outlier.shape = NA,aes(color=class))+
-    theme_bw()+
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.position = 'none')+
+  colors <- c("homo" = '#F8766D',
+              'favilaco' = '#F8766D',
+              'immunedeconv' = '#F8766D',
+              'semi' = '#82BD4E',
+              'heter_sampleIDfree' = '#56B4E9',
+              'heter' = '#56B4E9',
+              'SCDC' = '#56B4E9')
+
+  classes_to_include = unique(cor_dat$class)
+  colors_to_include = colors[classes_to_include]
+
+  ggplot(cor_dat,aes(reorder(class,cor,median,decreasing = T),cor))+
+    geom_boxplot(width=0.5,outlier.shape = NA,aes(color=class))+
+    scale_color_manual(values = colors_to_include)+
+    geom_hline(aes(yintercept = yh, linetype = 'baseline'),color = 'gray')+
+    ylab('pairwise correlation \n between samples')+
     xlab('')+
-    ylab('sample wise correlation')
+    theme_bw()+
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          legend.position = 'bottom',
+          ...)+
+    scale_linetype_manual(name = "", values = 2,
+                          guide = guide_legend(override.aes = list(color =  'gray')))
 
 }
 
@@ -281,8 +299,7 @@ plot_PairwiseSampleCorrelation = function(simulator_Statistics_res,
 #'
 #' @param simulator_Statistics_res a list of summary statistics returned from simulator_Statistics() function
 #' @param genes_to_evalu genes to visualize. If set to NULL, will compare all the genes in simulator_Statistics_res
-#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure.
-#'    The default order is specified as c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC')
+#' @param desired_order a character vector indicating desired order to organize simulated bulk in the figure. Default = NULL, in which case figures will be ordered alphabetically.
 #' @param ylim scale_y_continuous() "limits" parameter. Default = c(0,20)
 #' @param ybreaks scale_y_continuous() "breaks" parameter. Default = c(0,20)
 #' @param ... additional arguments to pass to theme()
@@ -290,7 +307,7 @@ plot_PairwiseSampleCorrelation = function(simulator_Statistics_res,
 #' @return a panel of mean-variance plot
 #' @export
 plot_MeanVariance = function(simulator_Statistics_res,genes_to_evalu = NULL,
-                             desired_order = c('baseline','homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                             desired_order = NULL,
                              ylim = c(0,20),ybreaks = seq(0, 20, 5),...){
 
   summary_stats = simulator_Statistics_res$summary_stats
@@ -298,7 +315,9 @@ plot_MeanVariance = function(simulator_Statistics_res,genes_to_evalu = NULL,
     summary_stats = summary_stats[summary_stats$gene %in% genes_to_evalu,]
   }
 
-  summary_stats$class = factor(summary_stats$class,levels = desired_order)
+  if(!is.null(desired_order)){
+    summary_stats$class = factor(summary_stats$class,levels = desired_order)
+  }
 
   if(!require(ggpointdensity,quietly = T)){
     stop('Suggested package "ggpointdensity" not installed')

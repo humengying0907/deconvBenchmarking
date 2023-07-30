@@ -12,7 +12,8 @@ bulkSimulator_heter_sampleIDfree(
   simulated_frac = NULL,
   heter_cell_type = NA,
   dirichlet_cs_par = 0.1,
-  min.subcluster.size = 20
+  min.subcluster.size = 20,
+  max.num.cs = NA
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ Set to NA if subclustering information is not available; the function will then 
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1}
 
 \item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20}
+
+\item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type}
 }
 \value{
 a list containing the simulated bulk expression and its associated simulated fraction matrix

@@ -403,7 +403,7 @@ bulkSimulator_heter<-function(scExpr,scMeta,
 #' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types
 #' @param dirichlet_cs_par a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1
 #' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20
-#'
+#' @param max.num.cs maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type
 #' @return a list containing the simulated bulk expression and its associated simulated fraction matrix
 #' @export
 bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
@@ -412,7 +412,8 @@ bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
                                             simulated_frac = NULL,
                                             heter_cell_type = NA,
                                             dirichlet_cs_par=0.1,
-                                            min.subcluster.size = 20){
+                                            min.subcluster.size = 20,
+                                            max.num.cs = NA){
 
   stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
 
@@ -457,7 +458,12 @@ bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
         if(cell_type == heter_cell_type){
           num.cs = 1
         }else{
-          num.cs=sample(1:length(cs),1,prob = rev(1:length(cs)))
+          if(is.na(max.num.cs)){
+            num.cs=sample(1:length(cs),1,prob = rev(1:length(cs)))
+          }else{
+            max.num.cs.ct = min(max.num.cs,length(cs))
+            num.cs=sample(1:max.num.cs.ct,1,prob = rev(1:max.num.cs.ct))
+          }
         }
         cs.included=sample(cs,num.cs)
         cs_frac[i,cs.included]=gtools::rdirichlet(1,subcluster_table[cs.included,'n']*dirichlet_cs_par)[1,]
@@ -557,7 +563,7 @@ bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA 
   fdata = data.frame(gene_symbol = rownames(scExpr))
   rownames(fdata) = rownames(scExpr)
 
-  eset = Biobase::ExpressionSet(scExpr,phenoData = as(scMeta_renamed, "AnnotatedDataFrame"),featureData = as(fdata, "AnnotatedDataFrame"))
+  eset = Biobase::ExpressionSet(as.matrix(scExpr),phenoData = as(scMeta_renamed, "AnnotatedDataFrame"),featureData = as(fdata, "AnnotatedDataFrame"))
   new_eset <- immunedeconv::make_bulk_eset(eset, simulated_frac, n_cells = n_cells) %>% base::suppressMessages()
   D = exprs(new_eset)
   colnames(D)=paste0('simulated',1:ncol(D))
@@ -584,6 +590,7 @@ bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA 
 bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_of_sample = NA, disease = NULL, ct.sub = NULL, prop_mat = NULL,
                           nbulk = 10, samplewithRep = T){
   require(SCDC, quietly = T)
+  scExpr = as.matrix(scExpr)
   eset = Biobase::ExpressionSet(assayData = scExpr,phenoData = new("AnnotatedDataFrame", data = scMeta))
 
   if(is.na(colnames_of_cellType)){
@@ -644,6 +651,7 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #'    when use_chunk = 'random', randomly select 50-100% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods
 #' @param dirichlet_cs_par a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' method.
 #' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' method only.
+#' @param max.num.cs maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.
 #' @param min.percentage minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'
 #' @param max.percentage maximum percentage of cellType fraction to generate in fraction simulation. Default = 99. This argument is only required for 'favilaco'
 #' @param nbulk number of simulated bulk samples. This argument is required for 'favilaco' and 'SCDC' methods.
@@ -696,6 +704,7 @@ bulkSimulator = function(methods,
                          use_chunk = 'all',
                          dirichlet_cs_par = 0.1,
                          min.subcluster.size = 20,
+                         max.num.cs = NA,
                          min.percentage = 1,
                          max.percentage = 99,
                          nbulk = 100,
@@ -748,7 +757,8 @@ bulkSimulator = function(methods,
                                                        simulated_frac,
                                                        heter_cell_type,
                                                        dirichlet_cs_par,
-                                                       min.subcluster.size)
+                                                       min.subcluster.size,
+                                                       max.num.cs)
            },
            favilaco = {
              result = bulkSimulator_favilaco(scExpr, scMeta,
