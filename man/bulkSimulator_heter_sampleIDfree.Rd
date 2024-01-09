@@ -11,6 +11,7 @@ bulkSimulator_heter_sampleIDfree(
   colnames_of_subcluster = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
+  export_cellUsage = F,
   dirichlet_cs_par = 0.1,
   min.subcluster.size = 20,
   max.num.cs = NA
@@ -24,15 +25,18 @@ bulkSimulator_heter_sampleIDfree(
 \item{colnames_of_cellType}{column name that corresponds to cellType in scMeta}
 
 \item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-Set to NA if subclustering information is not available; the function will then generate subclustering information automatically}
+Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using scran::quickCluster() function.
+Note that scran::quickCluster() function currently doesn't support Matrix > 1.6.1}
 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns}
 
 \item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types}
 
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F}
+
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1}
 
-\item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20}
+\item{min.subcluster.size}{minimum size (cell numbers) of a subcluster. This argument is applied when colnames_of_subcluster is NA and will pass to scran::quickCluster() function. Default = 20}
 
 \item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type}
 }

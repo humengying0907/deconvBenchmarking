@@ -26,8 +26,13 @@ get_limma_markers<-function(DE_statistics,log2FC=2, minimum_n=15,maximum_n=50){
 
   DE_list<-list()
   DE_cellTypes = unique(markers$CT)
+
   DE_cellTypes = DE_cellTypes[order(DE_cellTypes)]
   DE_cellTypes = DE_cellTypes[table(markers$CT)>=minimum_n]
+
+  if(length(unique(markers$CT)) > length(DE_cellTypes)){
+    warning(paste0('only ', length(DE_cellTypes),'/',length(unique(markers$CT)),' cell types containing DE genes based on current log2FC and minimum_n parameters'))
+  }
 
 
   for (i in 1:length(DE_cellTypes)){
@@ -66,7 +71,7 @@ refMarkers_limma <-function(scExpr, cell_type_labels, hv_genes = NULL,
                             log2FC = 2, minimum_n = 15,maximum_n = 50,
                             max.spec_cutoff_for_DE = 0.3){
   if(is.null(hv_genes)){
-    max.spec =  compute.specificity(collapse(ref = scExpr %>% t(), labels = cell_type_labels))
+    max.spec =  compute.specificity(collapse(ref = scExpr %>% as.matrix() %>% Matrix::t(), labels = cell_type_labels))
     hv_genes = names(max.spec)[max.spec>max.spec_cutoff_for_DE]
   }else{
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]
@@ -84,8 +89,9 @@ get_scran_statistics<-function(scExpr,cell_type_labels,cell_state_labels,hv_gene
   stopifnot(ncol(scExpr)==length(cell_type_labels))
   stopifnot(ncol(scExpr)==length(cell_state_labels))
   stopifnot(max(scExpr)>100)
+  scExpr = as.matrix(scExpr)
 
-  diff.exp.stat <- BayesPrism::get.exp.stat(sc.dat=scExpr[hv_genes,] %>% t(),# filter genes to reduce memory use
+  diff.exp.stat <- BayesPrism::get.exp.stat(sc.dat=scExpr[hv_genes,] %>% Matrix::t(),# filter genes to reduce memory use
                                             cell.type.labels=cell_type_labels,
                                             cell.state.labels=cell_state_labels,
                                             psuedo.count=0.1, #a numeric value used for log2 transformation. =0.1 for 10x data, =10 for smart-seq. Default=0.1.
@@ -161,7 +167,7 @@ refMarkers_scran <- function(scExpr,cell_type_labels,cell_state_labels = NULL,hv
     cell_state_labels = cell_type_labels
   }
   if(is.null(hv_genes)){
-    max.spec =  compute.specificity(collapse(ref = scExpr %>% t(), labels = cell_type_labels))
+    max.spec =  compute.specificity(collapse(ref = scExpr %>% as.matrix() %>% Matrix::t(), labels = cell_type_labels))
     hv_genes = names(max.spec)[max.spec>max.spec_cutoff_for_DE]
   }else{
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]
@@ -225,6 +231,71 @@ refMarkers_sigMatrixList = function(sigMatrixList,minimum_n = 15, maximum_n = 50
   return(marker_list)
 }
 
+############### Seurat markers ###########
+#' Obtain cell-type specific markers using Seurat::FindAllMarkers()
+#'
+#' @param scExpr Single-cell expression data, with genes in rows and samples in columns
+#' @param cell_type_labels a vector indicating cell-type level annotations
+#' @param seurat_marker_method Seurat FindAllMarkers() test.use parameter. Default = 'wilcox'
+#' @param log2FC log fold change threshold to select marker genes. Marker genes will be limited to a maximum of 'maximum_n' genes among those that pass the 'log2FC' threshold.
+#' @param minimum_n minimum number of marker genes for a cell-type. If a cell type has fewer than 'minimum_n' genes passing the log2FC threshold, it will be excluded from the marker list
+#' @param maximum_n maximum number of marker genes of a cell-type
+#' @param hv_genes a character vector containing the names of high-variable genes. scExpr will be pre-filtered based on the provided hv_genes to reduce computation time during the differential expression (DE) analysis.
+#'    Set to NULL if not available and the function will automatically find hv genes using Seurat::FindVariableFeatures() function
+#' @param n.HVG Number of features to select as top variable features: Seurat::FindVariableFeatures() function nfeatures parameter. Default to 3000
+#' @param ... additional parameters pass to Seurat::FindAllMarkers()
+#'
+#' @return a list of cell-type specific markers
+#' @export
+#'
+refMarkers_Seurat = function(scExpr,cell_type_labels,
+                             seurat_marker_method = 'wilcox',log2FC = 2,
+                             minimum_n=15,maximum_n=50 ,hv_genes = NULL, n.HVG = 3000, ...){
+  seurat_obj = CreateSeuratObject(counts = scExpr)
+  seurat_obj <- NormalizeData(seurat_obj, normalization.method = "LogNormalize", scale.factor = 10000)
+  seurat_obj <- ScaleData(seurat_obj,features = rownames(seurat_obj))
+  Idents(seurat_obj) = cell_type_labels
+
+  if(is.null(hv_genes)){
+    seurat_obj <- FindVariableFeatures(seurat_obj,selection.method = "vst", nfeatures = n.HVG)
+    marker <- FindAllMarkers(seurat_obj, features = VariableFeatures(seurat_obj), only.pos = T,
+                             test.use = seurat_marker_method, logfc.threshold = log2FC, ...)
+  }else{
+    marker <- FindAllMarkers(seurat_obj, features = hv_genes, only.pos = T,
+                             test.use = seurat_marker_method, logfc.threshold = log2FC,...)
+  }
+
+  gc()
+
+  marker = marker[order(marker$cluster,marker$avg_log2FC,decreasing = T),]
+
+  DE_list<-list()
+  DE_cellTypes = unique(marker$cluster)
+  DE_cellTypes = DE_cellTypes[order(DE_cellTypes)]
+  DE_cellTypes = DE_cellTypes[table(marker$cluster)>=minimum_n]
+
+  if(length(unique(marker$cluster)) > length(DE_cellTypes)){
+    warning(paste0('only ', length(DE_cellTypes),'/',length(unique(marker$cluster)),' cell types containing DE genes based on current log2FC and minimum_n parameters'))
+  }
+
+
+  for (i in 1:length(DE_cellTypes)){
+
+    DE_genes = marker$gene[marker$cluster == DE_cellTypes[i]]
+
+    if(length(DE_genes)>maximum_n){
+      cat(paste('For',DE_cellTypes[i],':',length(DE_genes),'genes passed log2FC threshold, will pick top',maximum_n, '\n'))
+      DE_list[[i]] = DE_genes[1:maximum_n]
+    }else{
+      DE_list[[i]] = DE_genes
+    }
+
+    names(DE_list)[i] = DE_cellTypes[i] %>% as.vector()
+
+  }
+  return(DE_list)
+}
+
 ############### get markers  ############
 #' Obtain cell-type specific markers from scRNA reference
 #' @description Generate a list of markers from scRNA reference with user-selected methods
@@ -272,7 +343,7 @@ refMarkers = function(methods,
 
   if(any(methods %in% c('limma','scran'))){
     if(is.null(hv_genes)){
-      max.spec =  compute.specificity(collapse(ref = scExpr %>% t(), labels = cell_type_labels))
+      max.spec =  compute.specificity(collapse(ref = scExpr %>% as.matrix() %>% Matrix::t(), labels = cell_type_labels))
       hv_genes = names(max.spec)[max.spec>max.spec_cutoff_for_DE]
     }else{
       hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]

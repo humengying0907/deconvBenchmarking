@@ -71,33 +71,12 @@ deconv_Bayesian_InstaPrism = function(bulk_expr,
                                       n.core = n.core)
   InstaPrism_res$Bayesian_InstaPrism_initial = InstaPrism.res.initial@Post.ini.ct@theta
 
-  # InstaPrism with malignant reference updated only
-  if(!is.na(key)){
-
-    updatedMal_obj = InstaPrism_update(InstaPrism.res.initial,
-                                        bulk_Expr = bulk_expr,
-                                        n.iter = n.iter,
-                                        cell.types.to.update = NULL,
-                                        key = key,
-                                        keep.phi = 'phi.ct')
-
-    InstaPrism_res$Bayesian_InstaPrism_updatedMal = updatedMal_obj@theta
-  }
-
   # InstaPrism with all cell types updated
-  if(is.na(key)){
-    cell.types.to.update = unique(cell_type_labels)
-  }else{
-    cell.types.to.update = unique(cell_type_labels)
-    cell.types.to.update = cell.types.to.update[cell.types.to.update!=key]
-  }
-
   updatedAll_obj  = InstaPrism_update(InstaPrism.res.initial,
                                       bulk_Expr = bulk_expr,
                                       n.iter = n.iter,
-                                      cell.types.to.update = cell.types.to.update,
-                                      key = key,
-                                      keep.phi = 'phi.ct')
+                                      cell.types.to.update = 'all',
+                                      key = key)
 
   InstaPrism_res$Bayesian_InstaPrism_updatedAll = updatedAll_obj@theta
 

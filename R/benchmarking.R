@@ -80,7 +80,7 @@ create_train_test_splitting<-function(scMeta,
 #'
 #' @param nbulk number of simulated bulk samples. This argument is required when simulated_frac is not available; in this case, the function
 #'    will generate simulated_frac automatically using fracSimulator_Beta() with the nbulk argument.
-#' @param fixed_cell_type argument for fracSimulator_Beta() function,  this argument will be called when simulated_frac is not available.
+#' @param fixed_cell_type argument for fracSimulator_Beta() function,  this argument is applicable when simulated_frac is not available.
 #'    It is a character denoting the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
 #'    to the name of the malignant cell types. If left undefined, the fracSimulator_Beta() will automatically select the most abundant cell type as 'fixed_cell_type'.
 #'
@@ -91,26 +91,29 @@ create_train_test_splitting<-function(scMeta,
 #'
 #' @param bulkSimulator_methods a character vector indicating which bulk simulation methods to use. Use \code{\link{list_bulkSimulator}} to check for available method names and suggested packages associated them.
 #'    Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed.
-#' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-#'    This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument
 #' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. If set to NULL, the function will generate simulated_frac automatically
 #'    using 'nbulk' and 'fixed_cell_type' arguments.
-#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
+#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell-type.
 #'     This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods
-#' @param dirichlet_cs_par a numeric value determine the dispersion level of subclusters. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' simulation method only.
-#' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.
-#' @param max.num.cs maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.
+#' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods
+#' @param min_chunkSize minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods
+#' @param use_chunk a character indicating which cells to pool together for the a particular cell-type component. Default='all' other options include 'random'.
+#'    When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
+#'    when use_chunk = 'random', randomly select 50-100% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods
+#' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
+#'    This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument
+#' @param export_cellUsage a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods
 #'
 #' @param refMarkers_methods a character vector specifying the desired methods for generating cell-type specific markers. Use \code{\link{list_refMarkers}} to check for available method names and suggested packages associated them.
-#'    Make sure you have the required packages installed to use these methods
+#'    Make sure you have the required packages installed to use these methods. Set to NULL if cell-type specific markers are not required
 #' @param colnames_of_cellState column name that corresponds to the cellState in scMeta. This argument is only required for scran-based marker identification,
 #'    where the differential expression (DE) analysis is performed between every pair of cell states from different cell types. Set this parameter to NA if the information is not available.
 #'    In that case, the function will treat all cells from the same cell type identically.
 #'
 #' @param refMatrix_methods a character vector specifying the desired methods for generating signature matrices. Use \code{\link{list_refMarix}} to check for available method names and suggested packages associated them.
-#'    Make sure you have the required packages installed to use these methods
+#'    Make sure you have the required packages installed to use these methods. Set to NULL if signature matrices are not needed.
 #'
-#' @param include_tcga a logicial variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
+#' @param include_tcga a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
 #' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
 #' @param purity_methods a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
 #'    Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
@@ -155,11 +158,18 @@ create_train_test_splitting<-function(scMeta,
 #'                   training_ratio = 0.5,
 #'                   split_by = "cell",
 #'
-#'                   # arguments for bulk simulation
+#'                   # arguments for bulk simulation: select bulk simulation methods
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,
@@ -223,12 +233,13 @@ benchmarking_init = function(scExpr,scMeta,
 
                              # arguments for bulkSimulator()
                              bulkSimulator_methods = NULL,
-                             colnames_of_subcluster = NA,
                              simulated_frac = NULL,
                              heter_cell_type = NA,
-                             dirichlet_cs_par = 0.1,
-                             min.subcluster.size = 20,
-                             max.num.cs = NA,
+                             ncells_perSample=500,
+                             min_chunkSize=5,
+                             use_chunk = 'all',
+                             colnames_of_subcluster = NA,
+                             export_cellUsage = F,
 
                              # arguments for refMarkers
                              refMarkers_methods = c('limma','scran'),
@@ -256,8 +267,9 @@ benchmarking_init = function(scExpr,scMeta,
 
   arg_list = list(...)
   fracSimulator_Beta_args = arg_list[names(arg_list) %in% c('min.frac','showFractionPlot')]
-  bulkSimulator_args = arg_list[names(arg_list) %in% c('ncells_perSample','min_chunkSize','use_chunk','min.percentage','max.percentage',
-                                                       'seed','use_simulated_frac_as_prop_mat','disease','ct.sub','samplewithRep')]
+  bulkSimulator_args = arg_list[names(arg_list) %in% c('dirichlet_cs_par','min.subcluster.size','max.num.cs',
+                                                       'min.percentage','max.percentage','seed',
+                                                       'disease','ct.sub','prop_mat','samplewithRep')]
   refMarkers_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','spec_cutoff_for_DE','sigMatrixList')]
   refMatrix_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','order_by','spec_cutoff_for_DE','markerList')]
   pre_refMatrix_autogeneS_args = arg_list[names(arg_list) %in% c('hv_genes','max.spec_cutoff_for_autogeneS','display_autogeneS_command','ngen',
@@ -315,8 +327,8 @@ benchmarking_init = function(scExpr,scMeta,
 
       simulated_frac = do.call(fracSimulator_Beta,c(list(scMeta = scMeta_renamed,
                                                          n = nbulk,
-                                                         colnames_of_sample  = 'sampleID',
-                                                         colnames_of_cellType  = 'cell_type',
+                                                         colnames_of_sample  = colnames_of_sample,
+                                                         colnames_of_cellType  = colnames_of_cellType,
                                                          fixed_cell_type = fixed_cell_type),
                                                     fracSimulator_Beta_args))
 
@@ -329,13 +341,14 @@ benchmarking_init = function(scExpr,scMeta,
                                                        scExpr = scExpr_test,
                                                        scMeta = scMeta_test,
                                                        colnames_of_cellType = colnames_of_cellType,
-                                                       colnames_of_subcluster = colnames_of_subcluster,
                                                        colnames_of_sample = colnames_of_sample,
                                                        simulated_frac = simulated_frac,
                                                        heter_cell_type  = heter_cell_type,
-                                                       dirichlet_cs_par = dirichlet_cs_par ,
-                                                       min.subcluster.size = min.subcluster.size,
-                                                       max.num.cs = max.num.cs,
+                                                       ncells_perSample=ncells_perSample,
+                                                       min_chunkSize=min_chunkSize,
+                                                       use_chunk = use_chunk,
+                                                       colnames_of_subcluster = colnames_of_subcluster,
+                                                       export_cellUsage = export_cellUsage,
                                                        nbulk = nbulk,
                                                        n.core = n.core),
                                                   bulkSimulator_args))
@@ -369,6 +382,8 @@ benchmarking_init = function(scExpr,scMeta,
   }else{
     marker_list = list()
   }
+
+  gc()
 
   if(!is.null(refMarkers_methods)){
     message('generate a list of signature matrices from training scRNA')
@@ -470,7 +485,7 @@ benchmarking_init = function(scExpr,scMeta,
 #' @examples
 #' \dontrun{
 #' # first create a benchmarking_obj using benchmarking_init():
-#' benchmarking_obj = benchmarking_init(scExpr = scExpr,
+#' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
@@ -483,11 +498,18 @@ benchmarking_init = function(scExpr,scMeta,
 #'                   training_ratio = 0.5,
 #'                   split_by = "cell",
 #'
-#'                   # arguments for bulk simulation
+#'                   # arguments for bulk simulation: select bulk simulation methods
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,
@@ -765,20 +787,32 @@ benchmarking_deconv = function(benchmarking_obj,
 #' # a complete pipeline to benchmarking deconvolution methods using bulk data simulated under various strategies
 #'
 #' # first create a benchmarking_obj using benchmarking_init():
-#' benchmarking_obj = benchmarking_init(scExpr = scExpr,
+#' # a standard benchmarking pipeline
+#' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
-#'
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
 #'
 #'                   # argument for fracSimulator_Beta()
+#'                   nbulk = 100,
 #'                   fixed_cell_type = 'malignant',
 #'
-#'                   # arguments for bulk simulation
+#'                   # argument for training/testing splitting:
+#'                   training_ratio = 0.5,
+#'                   split_by = "cell",
+#'
+#'                   # arguments for bulk simulation: select bulk simulation methods
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,

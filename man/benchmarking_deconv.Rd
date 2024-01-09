@@ -84,7 +84,7 @@ Perform deconvolution on the benchmarking_obj
 \examples{
 \dontrun{
 # first create a benchmarking_obj using benchmarking_init():
-benchmarking_obj = benchmarking_init(scExpr = scExpr,
+benchmarking_init(scExpr = scExpr,
                   scMeta = scMeta,
                   colnames_of_cellType = 'cell_type',
                   colnames_of_sample = 'sampleID',
@@ -97,11 +97,18 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   training_ratio = 0.5,
                   split_by = "cell",
 
-                  # arguments for bulk simulation
+                  # arguments for bulk simulation: select bulk simulation methods
                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
 
-                  # argument for semi/heter_sampleIDfree bulk simulation method
+                  # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
+
+                  # general simulation parameters
+                  ncells_perSample = 500,
+                  min_chunkSize = 20,
+                  use_chunk = 'random',
+
+                  # parameters for adjusting heterogeneity in sample ID-free bulk simulation
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
                   max.num.cs = NA,

@@ -190,7 +190,8 @@ pre_refMatrix_autogeneS <- function(scExpr, cell_type_labels, hv_genes = NULL, m
   }
 
   if(is.null(hv_genes)){
-    max.spec =  compute.specificity(collapse(ref = scExpr %>% t(), labels = cell_type_labels))
+    scExpr = as.matrix(scExpr)
+    max.spec =  compute.specificity(collapse(ref = scExpr %>% Matrix::t(), labels = cell_type_labels))
     hv_genes = names(max.spec)[max.spec>max.spec_cutoff_for_autogeneS]
   }else{
     hv_genes = hv_genes[hv_genes %in% rownames(scExpr)]

@@ -114,11 +114,16 @@ deconv_refFree = function(methods,
              result = list(RefFree_linseed = deconv_refFree_linseed(bulk_expr,k))
            },
            debCAM = {
-             result = list(RefFree_debCAM = deconv_refFree_debCAM(bulk_expr,k,corner.strategy, dim.rdc,
-                                                                  thres.low, thres.high, cluster.method, cluster.num, MG.num.thres,
-                                                                  lof.thres, quickhull, quick.select,
-                                                                  sample.weight, appro3, generalNMF,
-                                                                  cores))
+             result = tryCatch({
+               list(RefFree_debCAM = deconv_refFree_debCAM(bulk_expr, k, corner.strategy, dim.rdc,
+                                                           thres.low, thres.high, cluster.method, cluster.num, MG.num.thres,
+                                                           lof.thres, quickhull, quick.select,
+                                                           sample.weight, appro3, generalNMF,
+                                                           cores))
+             }, error = function(e) {
+               message("Error in debCAM method: ", e$message)
+               NULL
+             })
            },
            {
              warning(paste0("Invalid method specified: ",method, ", please use list_deconv_regression() to check for available methods"))

@@ -9,25 +9,17 @@ bulkSimulator(
   scExpr,
   scMeta,
   colnames_of_cellType = NA,
-  colnames_of_subcluster = NA,
   colnames_of_sample = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
   ncells_perSample = 500,
   min_chunkSize = 5,
   use_chunk = "all",
-  dirichlet_cs_par = 0.1,
-  min.subcluster.size = 20,
-  max.num.cs = NA,
-  min.percentage = 1,
-  max.percentage = 99,
+  colnames_of_subcluster = NA,
+  export_cellUsage = F,
   nbulk = 100,
-  seed = 24,
-  use_simulated_frac_as_prop_mat = F,
-  disease = NULL,
-  ct.sub = NULL,
-  samplewithRep = T,
-  n.core = 1
+  n.core = 1,
+  ...
 )
 }
 \arguments{
@@ -39,9 +31,6 @@ bulkSimulator(
 
 \item{colnames_of_cellType}{column name that corresponds to cellType in scMeta}
 
-\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
-Set to NA if subclustering information is not available; the function will then generate subclustering information automatically}
-
 \item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. Required for 'semi', 'heter', and 'SCDC' methods.}
 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods}
@@ -51,35 +40,22 @@ This argument is required for 'semi' and 'heter_sampleIDfree' methods}
 
 \item{ncells_perSample}{number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods}
 
-\item{min_chunkSize}{minimum number of cells to aggregate to construct a given cell-type component in the simulated bulk. This is an argument required for 'semi' and 'heter' methods}
+\item{min_chunkSize}{minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods}
 
 \item{use_chunk}{a character indicating which cells to pool together for the a given cell_type. Default='all' other options include 'random'.
 When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
 when use_chunk = 'random', randomly select 50-100\% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods}
 
-\item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' method.}
+\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
+Set to NA if subclustering information is not available; the function will then generate subclustering information automatically}
 
-\item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' method only.}
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods}
 
-\item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.}
+\item{nbulk}{number of simulated bulk samples. This argument is only applicable to 'favilaco' and 'SCDC' methods, as they will need this argument to generate the fraction matrix. Default = 100}
 
-\item{min.percentage}{minimum percentage of cellType fraction to generate in fraction simulation. Default = 1. This argument is only required for 'favilaco'}
+\item{n.core}{number of cores to use for parallel programming. Default = 1. Parallel programming is applicable to 'homo', 'semi' and 'heter' methods.}
 
-\item{max.percentage}{maximum percentage of cellType fraction to generate in fraction simulation. Default = 99. This argument is only required for 'favilaco'}
-
-\item{nbulk}{number of simulated bulk samples. This argument is required for 'favilaco' and 'SCDC' methods.}
-
-\item{seed}{a seed value for 'favilaco' method. Default = 24}
-
-\item{use_simulated_frac_as_prop_mat}{a logical variable to determine whether to use 'simulated_frac' as 'prop_mat' as input for 'SCDC' method}
-
-\item{disease}{indicate the health condition of subjects. This argument is only required for 'SCDC' method.}
-
-\item{ct.sub}{a subset of cell types that are selected to construct pseudo bulk samples. If NULL, then all cell types are used. This argument is only required for 'SCDC' method.}
-
-\item{samplewithRep}{logical, randomly sample single cells with replacement. Default is T. This argument is only required for 'SCDC' method.}
-
-\item{n.core}{number of cores to use for parallel programming. Default = 1. Parallel programming can be enabled for 'homo', 'semi' and 'heter' methods.}
+\item{...}{additional arguments to be passed to the following functions: bulkSimulator_heter_sampleIDfree(), bulkSimulator_favilaco() and bulkSimulator_SCDC()}
 }
 \value{
 a list of simulated bulk objects
@@ -106,12 +82,14 @@ bulkSimulator(methods = c('homo', 'semi','heter','favilaco','immunedeconv','SCDC
               # argument for semi/heter_sampleIDfree bulk simulation method
               heter_cell_type = 'malignant',
 
-              # argument for heter_sampleIDfree bulk simulation method
-              dirichlet_cs_par = 0.1,
-              min.subcluster.size = 20,
+              # general simulation parameters
+              ncells_perSample = 500,
+              min_chunkSize = 20,
+              use_chunk = 'random',
 
               # argument for 'favilaco' and 'SCDC' method
               nbulk = 100,
+
               n.core = 16)
 }
 }

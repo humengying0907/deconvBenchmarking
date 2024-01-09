@@ -14,6 +14,7 @@ bulkSimulator_semi(
   ncells_perSample = 500,
   min_chunkSize = 10,
   use_chunk = "all",
+  export_cellUsage = F,
   n.core = 1
 )
 }
@@ -32,11 +33,13 @@ bulkSimulator_semi(
 
 \item{ncells_perSample}{number of cells to pool together to generate a simulated bulk sample. Default 500}
 
-\item{min_chunkSize}{minimum number of cells to aggregate for the heter_cell_type}
+\item{min_chunkSize}{minimum number of cells required to construct the heter_cell_type}
 
 \item{use_chunk}{a character indicating which cells to pool together for the heter_cell_type. Default='all' other options include 'random'
 When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
 when use_chunk = 'random', randomly select 50-100\% of the cells belonging to the same patient for a given cell type}
+
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
 }

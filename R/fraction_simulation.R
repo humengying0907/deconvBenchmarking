@@ -42,6 +42,9 @@ fracSimulator_Beta<-function(scMeta,n,
 
   # for fixed cell type, simulate cell fraction based on beta distribution
   x=ct_table[,'freq'][ct_table[,colnames_of_cellType]==fixed_cell_type]
+  if(1 %in% x){
+    x[x==1]=x[x==1]-0.01
+  }
   fit_x <- fitdistrplus::fitdist(x, "beta")
   fixed_frac=rbeta(n,fit_x$estimate[1],fit_x$estimate[2])
 
