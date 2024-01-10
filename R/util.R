@@ -79,9 +79,23 @@ append_ABSOLUTE_pancanatlas = function(tumor_purity_table,ABSOLUTE_pancanatlas =
 }
 
 
+#' Get tcga expression and purity estimates
+#' @description Given a tcga_abbreviation, download tcga expression from Xena browser and get purity estimates
+#'
+#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
+#' @param to_use_genes a vector indicating which genes to include for the exported tcga expression. Set to NULL to export full expression retrieved from xena browser
+#' @param purity_methods a vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
+#'     Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
+#'    Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed
+#' @return a list of tcga expression (named as simulated_bulk, TPM normalized and has hgnc symbols as rownames) and purity estimates (named as simulated_frac)
+#' @export
+#'
+#' @examples
+#' \dontrun{build_tcga_obj('SKCM')}
+#'
 build_tcga_obj = function(tcga_abbreviation,
-                          to_use_genes,
-                          purity_methods){
+                          to_use_genes = NULL,
+                          purity_methods = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC')){
   if(is.na(tcga_abbreviation)){
     stop('Please provide the TCGA cohort abbreviation, such as "SKCM", to specifically include this cohort in the bulk object')
   }
@@ -91,6 +105,10 @@ build_tcga_obj = function(tcga_abbreviation,
   fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.htseq_fpkm.tsv.gz')
 
   message('downloading tcga expression from Xena browser')
+  if(is.null(to_use_genes)){
+    gene_mapping = read.delim(mapfile)
+    to_use_genes = gene_mapping$gene
+  }
   tcga_expr = xnea_fpkm2tpm(fpkmfile,mapfile,to_use_genes)
   purity_allMethods = tumor_purity(colnames(tcga_expr))
 

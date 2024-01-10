@@ -3,6 +3,7 @@
 export(benchmarking_deconv)
 export(benchmarking_evalu)
 export(benchmarking_init)
+export(build_tcga_obj)
 export(bulkSimulator)
 export(bulkSimulator_SCDC)
 export(bulkSimulator_favilaco)
