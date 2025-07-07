@@ -2,20 +2,29 @@
 % Please edit documentation in R/util.R
 \name{build_tcga_obj}
 \alias{build_tcga_obj}
+<<<<<<< HEAD
 \title{Build TCGA bulk expression object for a given cohort}
+=======
+\title{Get tcga expression and purity estimates}
+>>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 \usage{
 build_tcga_obj(
   tcga_abbreviation,
   to_use_genes = NULL,
+<<<<<<< HEAD
   mapfile_link =
     "https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v36.annotation.gtf.gene.probemap",
   fpkmfile_link =
     "https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-THCA.star_fpkm.tsv.gz"
+=======
+  purity_methods = c("ESTIMATE", "ABSOLUTE", "LUMP", "IHC", "CPE", "ABSOLUTE_GDC")
+>>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 )
 }
 \arguments{
 \item{tcga_abbreviation}{a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'}
 
+<<<<<<< HEAD
 \item{to_use_genes}{Character vector. Genes to include in the output. If NULL, all available genes are used.}
 
 \item{mapfile_link}{Character. URL for the gene mapping file (optional; provide only if a custom mapping file is needed).}
@@ -32,4 +41,21 @@ Downloads TCGA expression data (FPKM) for the specified cohort from UCSC Xena Br
 \dontrun{
 build_tcga_obj('SKCM')
 }
+=======
+\item{to_use_genes}{a vector indicating which genes to include for the exported tcga expression. Set to NULL to export full expression retrieved from xena browser}
+
+\item{purity_methods}{a vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
+Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
+Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed}
+}
+\value{
+a list of tcga expression (named as simulated_bulk, TPM normalized and has hgnc symbols as rownames) and purity estimates (named as simulated_frac)
+}
+\description{
+Given a tcga_abbreviation, download tcga expression from Xena browser and get purity estimates
+}
+\examples{
+\dontrun{build_tcga_obj('SKCM')}
+
+>>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 }
