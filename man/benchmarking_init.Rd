@@ -66,11 +66,7 @@ using 'nbulk' and 'fixed_cell_type' arguments.}
 \item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell-type.
 This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods}
 
-<<<<<<< HEAD
 \item{ncells_perSample}{number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'immunedeconv' and 'SCDC' methods}
-=======
-\item{ncells_perSample}{number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods}
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
 \item{min_chunkSize}{minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods}
 
@@ -94,15 +90,6 @@ In that case, the function will treat all cells from the same cell type identica
 Make sure you have the required packages installed to use these methods. Set to NULL if signature matrices are not needed.}
 
 \item{include_tcga}{a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser}
-<<<<<<< HEAD
-=======
-
-\item{tcga_abbreviation}{a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'}
-
-\item{purity_methods}{a vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
-Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T}
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
 \item{create_autogeneS_input}{a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
 will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters}
@@ -149,11 +136,7 @@ benchmarking_init(scExpr = scExpr,
                   split_by = "cell",
 
                   # arguments for bulk simulation: select bulk simulation methods
-<<<<<<< HEAD
                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
-=======
-                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
                   # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',

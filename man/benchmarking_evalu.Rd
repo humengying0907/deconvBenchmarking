@@ -36,17 +36,10 @@ benchmarking_init(scExpr = scExpr,
                   # argument for training/testing splitting:
                   training_ratio = 0.5,
                   split_by = "cell",
-<<<<<<< HEAD
 
                   # arguments for bulk simulation: select bulk simulation methods
                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 
-=======
-
-                  # arguments for bulk simulation: select bulk simulation methods
-                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
                   # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
 

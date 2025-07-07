@@ -12,11 +12,7 @@ bulkSimulator_heter(
   simulated_frac = NULL,
   min_chunkSize = 5,
   use_chunk = "all",
-<<<<<<< HEAD
   export_cellUsage = FALSE,
-=======
-  export_cellUsage = F,
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
   n.core = 1
 )
 }

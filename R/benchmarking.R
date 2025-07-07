@@ -95,11 +95,7 @@ create_train_test_splitting<-function(scMeta,
 #'    using 'nbulk' and 'fixed_cell_type' arguments.
 #' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell-type.
 #'     This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods
-<<<<<<< HEAD
 #' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'immunedeconv' and 'SCDC' methods
-=======
-#' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #' @param min_chunkSize minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods
 #' @param use_chunk a character indicating which cells to pool together for the a particular cell-type component. Default='all' other options include 'random'.
 #'    When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
@@ -116,15 +112,6 @@ create_train_test_splitting<-function(scMeta,
 #'
 #' @param refMatrix_methods a character vector specifying the desired methods for generating signature matrices. Use \code{\link{list_refMarix}} to check for available method names and suggested packages associated them.
 #'    Make sure you have the required packages installed to use these methods. Set to NULL if signature matrices are not needed.
-<<<<<<< HEAD
-=======
-#'
-#' @param include_tcga a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
-#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
-#' @param purity_methods a vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-#'    Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
-#'    Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'
 #' @param include_tcga a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
 #' @param create_autogeneS_input a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
@@ -166,11 +153,7 @@ create_train_test_splitting<-function(scMeta,
 #'                   split_by = "cell",
 #'
 #'                   # arguments for bulk simulation: select bulk simulation methods
-<<<<<<< HEAD
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
-=======
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'
 #'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
@@ -371,8 +354,8 @@ benchmarking_init = function(scExpr,scMeta,
 
       simulated_frac = do.call(fracSimulator_Beta,c(list(scMeta = scMeta_renamed,
                                                          n = nbulk,
-                                                         colnames_of_sample  = colnames_of_sample,
-                                                         colnames_of_cellType  = colnames_of_cellType,
+                                                         colnames_of_sample  = 'sampleID',
+                                                         colnames_of_cellType  = 'cell_type',
                                                          fixed_cell_type = fixed_cell_type),
                                                     fracSimulator_Beta_args))
 
@@ -421,13 +404,7 @@ benchmarking_init = function(scExpr,scMeta,
     marker_list = list()
   }
 
-<<<<<<< HEAD
   if(!is.null(refMatrix_methods)){
-=======
-  gc()
-
-  if(!is.null(refMarkers_methods)){
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
     message('generate a list of signature matrices from training scRNA')
     query = all(intersect(refMarkers_methods,refMatrix_methods) %in% c('limma','scran')) & length(intersect(refMarkers_methods,refMatrix_methods)>0)
 
@@ -536,11 +513,7 @@ benchmarking_init = function(scExpr,scMeta,
 #'                   split_by = "cell",
 #'
 #'                   # arguments for bulk simulation: select bulk simulation methods
-<<<<<<< HEAD
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
-=======
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'
 #'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
@@ -797,17 +770,10 @@ benchmarking_deconv = function(benchmarking_obj,
 #'                   # argument for training/testing splitting:
 #'                   training_ratio = 0.5,
 #'                   split_by = "cell",
-<<<<<<< HEAD
 #'
 #'                   # arguments for bulk simulation: select bulk simulation methods
 #'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 #'
-=======
-#'
-#'                   # arguments for bulk simulation: select bulk simulation methods
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
-#'
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
 #'

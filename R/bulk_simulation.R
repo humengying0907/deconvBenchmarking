@@ -124,7 +124,6 @@ setCountSemi <- function(ID,
   scMeta_unselected = meta_shuffle(scMeta_unselected)
 
   if(length(fixed_cells) < min_chunkSize){
-<<<<<<< HEAD
     patch_n = min_chunkSize - length(fixed_cells)
 
     if(nrow(scMeta_unselected) < patch_n){
@@ -132,16 +131,6 @@ setCountSemi <- function(ID,
     }else{
       fixed_cells = c(fixed_cells,rownames(scMeta_unselected)[1:patch_n])
     }
-=======
-    if(nrow(scMeta_unselected) < min_chunkSize){
-      stop('min_chunkSize too large: no enough cells to aggreate; use smaller chunk size threshold')
-    }
-
-    patch_n = min_chunkSize - length(fixed_cells)
-    fixed_cells = c(fixed_cells,rownames(scMeta_unselected)[1:patch_n])
-    warning(paste('not enough chunk size identified for heter_cell_type with the given "min_chunkSize" parameter: will combine chunks from different samples'))
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
   }
 
 
@@ -251,19 +240,12 @@ bulkSimulator_semi<-function(scExpr,scMeta,
     stop('please provide cell fraction matrix with pre-defined proportions for bulk simulation')
   }
 
-<<<<<<< HEAD
   simulated_frac = as.matrix(simulated_frac)
-=======
-  if(any(is.na(scMeta[,colnames_of_sample]))){
-    stop('NA values found in scMeta[,colnames_of_sample]')
-  }
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
   cell_type_labels=scMeta[,colnames_of_cellType]
   stopifnot(all(colnames(simulated_frac) %in% unique(cell_type_labels)))
   scMeta[,colnames_of_sample] = as.character(scMeta[,colnames_of_sample])
 
-<<<<<<< HEAD
   if(!heter_cell_type %in% scMeta[, colnames_of_cellType]){
     stop('Please make sure the provided "heter_cell_type" is a cell type from scMeta.')
   }
@@ -276,11 +258,6 @@ bulkSimulator_semi<-function(scExpr,scMeta,
   if(export_cellUsage){
     pboptions(type = "txt", style = 3, char = "=")
 
-=======
-  if(export_cellUsage){
-    pboptions(type = "txt", style = 3, char = "=")
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
     sim_res = pblapply(seq(1,nrow(simulated_frac)),setCountSemi,simulated_frac,
                        scExpr,scMeta,
                        colnames_of_cellType,colnames_of_sample,
@@ -404,11 +381,6 @@ heter_aggregate<-function(ID,simulated_frac,scExpr,scMeta,colnames_of_cellType,
       }else{
         p = c(p,rownames(scMeta_candidate)[1:patch_n])
       }
-<<<<<<< HEAD
-=======
-      p = c(p,rownames(scMeta_candidate)[1:patch_n])
-      warning(paste('not enough chunk size identified for',ct,'with the given "min_chunkSize" parameter: will combine chunks from different samples'))
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
     }
   }
 
@@ -435,17 +407,6 @@ heter_aggregate<-function(ID,simulated_frac,scExpr,scMeta,colnames_of_cellType,
     E = C %*% matrix(simulated_frac_row[colnames(C)],ncol = 1)
   }
   E=apply(E,2,function(x)((x/sum(x))*1e+06))
-<<<<<<< HEAD
-=======
-
-  if(export_cellUsage){
-    return(list(E = E,
-                cellUsed = do.call(c,group)))
-  }else{
-    return(E)
-  }
-}
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
   if(export_cellUsage){
     return(list(E = E,
@@ -472,7 +433,6 @@ heter_aggregate<-function(ID,simulated_frac,scExpr,scMeta,colnames_of_cellType,
 #'
 #' @return a list containing the simulated bulk expression and its associated simulated fraction matrix
 #' @export
-<<<<<<< HEAD
 bulkSimulator_heter <- function(scExpr, scMeta,
                                 colnames_of_cellType = NA,
                                 colnames_of_sample = NA,
@@ -493,20 +453,6 @@ bulkSimulator_heter <- function(scExpr, scMeta,
   }
   if (is.null(simulated_frac)) {
     stop('Please provide cell fraction matrix with pre-defined proportions for bulk simulation.')
-=======
-bulkSimulator_heter<-function(scExpr,scMeta,
-                              colnames_of_cellType = NA,
-                              colnames_of_sample = NA,
-                              simulated_frac = NULL,
-                              min_chunkSize=5,
-                              use_chunk='all',
-                              export_cellUsage = F,
-                              n.core = 1){
-
-  stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
-  if(is.na(colnames_of_cellType)){
-    stop('please provide column name that corresponds to cellType in scMeta')
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
   }
 
   simulated_frac <- as.matrix(simulated_frac)
@@ -529,7 +475,6 @@ bulkSimulator_heter<-function(scExpr,scMeta,
     stop('All columns of simulated_frac must be cell types found in scMeta.')
   }
 
-<<<<<<< HEAD
   pboptions(type = "txt", style = 3, char = "=")
   if (export_cellUsage) {
     sim_res <- pblapply(seq_len(nrow(simulated_frac)), heter_aggregate,
@@ -569,60 +514,6 @@ bulkSimulator_heter<-function(scExpr,scMeta,
     return(list(simulated_bulk = D,
                 simulated_frac = simulated_frac))
   }
-=======
-  if(any(is.na(scMeta[,colnames_of_sample]))){
-    stop('NA values found in scMeta[,colnames_of_sample]')
-  }
-
-  cell_type_labels=scMeta[,colnames_of_cellType]
-  stopifnot(all(colnames(simulated_frac) %in% unique(cell_type_labels)))
-
-  if(export_cellUsage){
-    pboptions(type = "txt", style = 3, char = "=")
-    sim_res=pblapply(seq(1,nrow(simulated_frac)),heter_aggregate,
-                     simulated_frac,
-                     scExpr,
-                     scMeta,
-                     colnames_of_cellType,
-                     colnames_of_sample,
-                     min_chunkSize,
-                     use_chunk,
-                     export_cellUsage,
-                     cl = n.core)
-
-    D = do.call(cbind, lapply(sim_res, function(x) x[[1]]))
-    colnames(D)=paste0('simulated',1:ncol(D))
-
-    CellNameList = lapply(sim_res, function(x) x[[2]])
-    cellUsed = unlist(CellNameList)
-    cell_usage = data.frame(cell = cellUsed,
-                            bulk_id = paste0('simulated',rep(seq_along(CellNameList), lengths(CellNameList))))
-
-    names(cell_type_labels) = rownames(scMeta)
-    cell_usage$cell_type = cell_type_labels[match(cell_usage$cell,names(cell_type_labels))]
-
-    return(list(simulated_bulk = D,
-                simulated_frac = simulated_frac,
-                cell_usage = cell_usage))
-  }else{
-
-    pboptions(type = "txt", style = 3, char = "=")
-    D=do.call(cbind,pblapply(seq(1,nrow(simulated_frac)),heter_aggregate,
-                             simulated_frac,
-                             scExpr,
-                             scMeta,
-                             colnames_of_cellType,
-                             colnames_of_sample,
-                             min_chunkSize,
-                             use_chunk,
-                             cl = n.core))
-    colnames(D)=paste0('simulated',1:ncol(D))
-
-    return(list(simulated_bulk = D,
-                simulated_frac = simulated_frac))
-  }
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 }
 
 ############## functions for sampleID-free heter simulation ###########
@@ -633,14 +524,13 @@ bulkSimulator_heter<-function(scExpr,scMeta,
 #' @param scMeta dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr
 #' @param colnames_of_cellType column name that corresponds to cellType in scMeta
 #' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-#'    Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using scran::quickCluster() function.
-#'    Note that scran::quickCluster() function currently doesn't support Matrix > 1.6.1
+#'    Set to NA if subclustering information is not available; the function will then generate subclustering information automatically
 #' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns
 #' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types
 #' @param export_cellUsage a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F
 #' @param dirichlet_cs_par a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1
+#' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20
 #' @param max.num.cs maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type
-#' @param min.subcluster.size minimum size (cell numbers) of a subcluster. This argument is applied when colnames_of_subcluster is NA and will pass to scran::quickCluster() function. Default = 20
 #' @return a list containing the simulated bulk expression and its associated simulated fraction matrix
 #' @export
 bulkSimulator_heter_sampleIDfree = function(scExpr,scMeta,
@@ -912,11 +802,7 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. This argument if required for 'homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv' methods
 #' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
 #'     This argument is required for 'semi' and 'heter_sampleIDfree' methods
-<<<<<<< HEAD
 #' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'immunedeconv' and 'SCDC' methods
-=======
-#' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'favilaco', 'immunedeconv' and 'SCDC' methods
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #' @param min_chunkSize minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods
 #' @param use_chunk a character indicating which cells to pool together for the a given cell_type. Default='all' other options include 'random'.
 #'    When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
@@ -924,15 +810,9 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.  This is an argument required for 'heter_sampleIDfree' method only.
 #'    Set to NA if subclustering information is not available; the function will then generate subclustering information automatically
 #' @param export_cellUsage a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods
-<<<<<<< HEAD
 #' @param nbulk number of simulated bulk samples. This argument is only applicable to 'SCDC' methods, as they will need this argument to generate the fraction matrix. Default = 100
 #' @param n.core number of cores to use for parallel programming. Default = 1. Parallel programming is applicable to 'homo', 'semi' and 'heter' methods.
 #' @param ... additional arguments to be passed to the following functions: bulkSimulator_heter_sampleIDfree(),and bulkSimulator_SCDC()
-=======
-#' @param nbulk number of simulated bulk samples. This argument is only applicable to 'favilaco' and 'SCDC' methods, as they will need this argument to generate the fraction matrix. Default = 100
-#' @param n.core number of cores to use for parallel programming. Default = 1. Parallel programming is applicable to 'homo', 'semi' and 'heter' methods.
-#' @param ... additional arguments to be passed to the following functions: bulkSimulator_heter_sampleIDfree(), bulkSimulator_favilaco() and bulkSimulator_SCDC()
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'
 #' @return a list of simulated bulk objects
 #' @export
@@ -961,12 +841,6 @@ bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_
 #'               min_chunkSize = 20,
 #'               use_chunk = 'random',
 #'
-<<<<<<< HEAD
-=======
-#'               # argument for 'favilaco' and 'SCDC' method
-#'               nbulk = 100,
-#'
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 #'               n.core = 16)
 #' }
 bulkSimulator = function(methods,
@@ -987,7 +861,6 @@ bulkSimulator = function(methods,
 
   arg_list = list(...)
   heter_sampleIDfree_args = arg_list[names(arg_list) %in% c('dirichlet_cs_par','min.subcluster.size','max.num.cs')]
-<<<<<<< HEAD
   SCDC_args = arg_list[names(arg_list) %in% c('disease','ct.sub','prop_mat','samplewithRep')]
 
   if('favilaco' %in% methods){
@@ -1030,11 +903,6 @@ bulkSimulator = function(methods,
       }
     }
   }
-=======
-  favilaco_args = arg_list[names(arg_list) %in% c('min.percentage','max.percentage','seed')]
-  SCDC_args = arg_list[names(arg_list) %in% c('disease','ct.sub','prop_mat','samplewithRep')]
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 
   bulk_list = list()
   l = list_bulkSimulator(show_description=T)
@@ -1084,18 +952,6 @@ bulkSimulator = function(methods,
                                                                       export_cellUsage = export_cellUsage),
                                                                  heter_sampleIDfree_args))
 
-<<<<<<< HEAD
-=======
-           },
-           favilaco = {
-             result = do.call(bulkSimulator_favilaco,c(list(scExpr = scExpr,
-                                                            scMeta = scMeta,
-                                                            colnames_of_cellType = colnames_of_cellType,
-                                                            nbulk = nbulk,
-                                                            pool.size = ncells_perSample),
-                                                       favilaco_args))
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
            },
            immunedeconv = {
              result = bulkSimulator_immunedeconv(scExpr, scMeta,
@@ -1119,12 +975,6 @@ bulkSimulator = function(methods,
     bulk_list <- c(bulk_list, list(result))
   }
   names(bulk_list) = methods
-
-  for(method in methods){
-    if(any(grepl('Error',bulk_list[[method]][['simulated_bulk']]))){
-      warning(paste('bulk simulation not successful in',method,'simulation'))
-    }
-  }
 
   return(bulk_list)
 }

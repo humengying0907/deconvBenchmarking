@@ -51,19 +51,11 @@ Set to NA if subclustering information is not available; the function will then 
 
 \item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods}
 
-<<<<<<< HEAD
 \item{nbulk}{number of simulated bulk samples. This argument is only applicable to 'SCDC' methods, as they will need this argument to generate the fraction matrix. Default = 100}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1. Parallel programming is applicable to 'homo', 'semi' and 'heter' methods.}
 
 \item{...}{additional arguments to be passed to the following functions: bulkSimulator_heter_sampleIDfree(),and bulkSimulator_SCDC()}
-=======
-\item{nbulk}{number of simulated bulk samples. This argument is only applicable to 'favilaco' and 'SCDC' methods, as they will need this argument to generate the fraction matrix. Default = 100}
-
-\item{n.core}{number of cores to use for parallel programming. Default = 1. Parallel programming is applicable to 'homo', 'semi' and 'heter' methods.}
-
-\item{...}{additional arguments to be passed to the following functions: bulkSimulator_heter_sampleIDfree(), bulkSimulator_favilaco() and bulkSimulator_SCDC()}
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
 }
 \value{
 a list of simulated bulk objects
@@ -95,12 +87,6 @@ bulkSimulator(methods = c('homo', 'semi','heter'),
               min_chunkSize = 20,
               use_chunk = 'random',
 
-<<<<<<< HEAD
-=======
-              # argument for 'favilaco' and 'SCDC' method
-              nbulk = 100,
-
->>>>>>> 7ff7b730a10aa03a7aba7cf0128d54a5c25083f8
               n.core = 16)
 }
 }
