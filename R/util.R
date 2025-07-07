@@ -15,6 +15,7 @@ build_ref_matrix<-function(Expr,cell_type_labels){
 
 
 xnea_fpkm2tpm <- function(fpkmfile,mapfile,to_use_genes,reNormalize = F){
+
   require(data.table, quietly = T)
 
   fpkm_expr = fread(fpkmfile) %>% column_to_rownames('Ensembl_ID')
@@ -104,6 +105,12 @@ build_tcga_obj = function(tcga_abbreviation,
     stop('Please provide the TCGA cohort abbreviation, such as "SKCM", to specifically include this cohort in the bulk object')
   }
 
+  require(httr)
+
+  if (!requireNamespace("TCGAbiolinks", quietly = TRUE)){
+    stop('Please make sure you have TCGAbiolinks installed to run build_tcga_obj')
+  }
+
   tcga_abbreviation = stringr::str_to_upper(tcga_abbreviation)
   mapfile = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v36.annotation.gtf.gene.probemap'
   fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.star_fpkm.tsv.gz')
@@ -142,6 +149,11 @@ build_tcga_obj = function(tcga_abbreviation,
 
 
 get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
+
+  if (!requireNamespace("scran", quietly = TRUE)){
+    stop('Please make sure you have scran installed to run get_subcluster')
+  }
+
   require(scran,quietly = T) %>% suppressMessages()
 
   stopifnot(ncol(scExpr)==length(cell_type_labels))

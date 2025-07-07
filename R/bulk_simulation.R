@@ -701,6 +701,10 @@ bulkSimulator_favilaco = function(scExpr, scMeta, colnames_of_cellType = NA, nbu
 #' @export
 bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA , simulated_frac = NULL, n_cells = 500){
 
+  if (!requireNamespace("immunedeconv", quietly = TRUE)){
+    stop('Please make sure you have immunedeconv installed to run immunedeconv method')
+  }
+
   require(immunedeconv, quietly = T)
 
   stopifnot(all.equal(colnames(scExpr),rownames(scMeta)))
@@ -749,6 +753,9 @@ bulkSimulator_immunedeconv = function(scExpr, scMeta, colnames_of_cellType = NA 
 #' @export
 bulkSimulator_SCDC = function(scExpr,scMeta,colnames_of_cellType = NA, colnames_of_sample = NA, nbulk = 10, disease = NULL, ct.sub = NULL, prop_mat = NULL,
                           samplewithRep = T){
+  if (!requireNamespace("SCDC", quietly = TRUE)){
+    stop('Please make sure you have SCDC installed to run SCDC method')
+  }
   require(SCDC, quietly = T)
   scExpr = as.matrix(scExpr)
   eset = Biobase::ExpressionSet(assayData = scExpr,phenoData = new("AnnotatedDataFrame", data = scMeta))
