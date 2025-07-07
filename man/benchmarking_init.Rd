@@ -14,18 +14,18 @@ benchmarking_init(
   training_ratio = 0.5,
   split_by = "cell",
   bulkSimulator_methods = NULL,
-  colnames_of_subcluster = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
-  dirichlet_cs_par = 0.1,
-  min.subcluster.size = 20,
-  max.num.cs = NA,
+  ncells_perSample = 500,
+  min_chunkSize = 5,
+  use_chunk = "all",
+  colnames_of_subcluster = NA,
+  export_cellUsage = F,
   refMarkers_methods = c("limma", "scran"),
   colnames_of_cellState = NA,
   refMatrix_methods = c("raw", "limma", "scran"),
   include_tcga = F,
   tcga_abbreviation = NA,
-  purity_methods = c("ESTIMATE", "ABSOLUTE", "LUMP", "IHC", "CPE", "ABSOLUTE_GDC"),
   create_autogeneS_input = F,
   autogeneS_input_file_name = NULL,
   create_cibersortx_input = F,
@@ -47,7 +47,7 @@ this argument is also required when split_by = 'sample'}
 \item{nbulk}{number of simulated bulk samples. This argument is required when simulated_frac is not available; in this case, the function
 will generate simulated_frac automatically using fracSimulator_Beta() with the nbulk argument.}
 
-\item{fixed_cell_type}{argument for fracSimulator_Beta() function,  this argument will be called when simulated_frac is not available.
+\item{fixed_cell_type}{argument for fracSimulator_Beta() function,  this argument is applicable when simulated_frac is not available.
 It is a character denoting the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
 to the name of the malignant cell types. If left undefined, the fracSimulator_Beta() will automatically select the most abundant cell type as 'fixed_cell_type'.}
 
@@ -60,38 +60,36 @@ a pre-defined ratio of samples will be sampled as training samples, and all the 
 \item{bulkSimulator_methods}{a character vector indicating which bulk simulation methods to use. Use \code{\link{list_bulkSimulator}} to check for available method names and suggested packages associated them.
 Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed.}
 
-\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument}
-
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. If set to NULL, the function will generate simulated_frac automatically
 using 'nbulk' and 'fixed_cell_type' arguments.}
 
-\item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
+\item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell-type.
 This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods}
 
-\item{dirichlet_cs_par}{a numeric value determine the dispersion level of subclusters. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' simulation method only.}
+\item{ncells_perSample}{number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'immunedeconv' and 'SCDC' methods}
 
-\item{min.subcluster.size}{minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.}
+\item{min_chunkSize}{minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods}
 
-\item{max.num.cs}{maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.}
+\item{use_chunk}{a character indicating which cells to pool together for the a particular cell-type component. Default='all' other options include 'random'.
+When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
+when use_chunk = 'random', randomly select 50-100\% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods}
+
+\item{colnames_of_subcluster}{column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
+This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument}
+
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods}
 
 \item{refMarkers_methods}{a character vector specifying the desired methods for generating cell-type specific markers. Use \code{\link{list_refMarkers}} to check for available method names and suggested packages associated them.
-Make sure you have the required packages installed to use these methods}
+Make sure you have the required packages installed to use these methods. Set to NULL if cell-type specific markers are not required}
 
 \item{colnames_of_cellState}{column name that corresponds to the cellState in scMeta. This argument is only required for scran-based marker identification,
 where the differential expression (DE) analysis is performed between every pair of cell states from different cell types. Set this parameter to NA if the information is not available.
 In that case, the function will treat all cells from the same cell type identically.}
 
 \item{refMatrix_methods}{a character vector specifying the desired methods for generating signature matrices. Use \code{\link{list_refMarix}} to check for available method names and suggested packages associated them.
-Make sure you have the required packages installed to use these methods}
+Make sure you have the required packages installed to use these methods. Set to NULL if signature matrices are not needed.}
 
-\item{include_tcga}{a logicial variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser}
-
-\item{tcga_abbreviation}{a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'}
-
-\item{purity_methods}{a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
-Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T}
+\item{include_tcga}{a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser}
 
 \item{create_autogeneS_input}{a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
 will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters}
@@ -109,7 +107,7 @@ automatically export the input data in 'cibersortx_input' folder}
 pre_refMatrix_autogeneS() and pre_refMatrix_cibersortx()}
 }
 \value{
-a list containing the following elements: 1) a list of training/testing cells; 2) a list of simulated bulk object and/or tcga expression;
+a list containing the following elements: 1) a list of training/testing cells; 2) a list of simulated bulk object;
 3) a list of cell-type specific markers; 4) a list of signature matrices
 }
 \description{
@@ -120,7 +118,6 @@ This function takes scRNA profile as input and generate an object intended for f
 The function performs the following steps: (1) It divides the cells into training and testing cells;
 (2) the training cells are utilized to generate reference profiles, such as markers and signature matrices;
 (3) the testing cells are used to generate simulated bulk expression, which is then employed for deconvolution purposes;
-(4) additionally, this function offers the flexibility to include a TCGA cohort as part of the object for future deconvolution benchmarking
 }
 \examples{
 \dontrun{
@@ -138,11 +135,18 @@ benchmarking_init(scExpr = scExpr,
                   training_ratio = 0.5,
                   split_by = "cell",
 
-                  # arguments for bulk simulation
-                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                  # arguments for bulk simulation: select bulk simulation methods
+                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 
-                  # argument for semi/heter_sampleIDfree bulk simulation method
+                  # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
+
+                  # general simulation parameters
+                  ncells_perSample = 500,
+                  min_chunkSize = 20,
+                  use_chunk = 'random',
+
+                  # parameters for adjusting heterogeneity in sample ID-free bulk simulation
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
                   max.num.cs = NA,
@@ -153,11 +157,6 @@ benchmarking_init(scExpr = scExpr,
                   # arguments for signature matrics construction
                   refMatrix_methods = c('raw','limma','scran'),
 
-                  # arguments to include tcga
-                  include_tcga = T,
-                  tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
-
                   # export files for autogeneS and cibersortx
                   create_autogeneS_input = T,
                   create_cibersortx_input = T,
@@ -165,29 +164,5 @@ benchmarking_init(scExpr = scExpr,
                   n.core = 4
                   )
 
-# generate a benchmarking object containing only TCGA cohort
-# and use all the single cells to generate reference markers and signature matrices
-benchmarking_init(scExpr = scExpr,
-                  scMeta = scMeta,
-                  colnames_of_cellType = 'cell_type',
-                  colnames_of_sample = 'sampleID',
-
-                  # use all cells to build scRNA reference
-                  training_ratio = 1,
-
-                  # set bulkSimulator_methods to NULL to disable bulk simulation
-                  bulkSimulator_methods = NULL,
-
-                  # argument for marker constructions
-                  refMarkers_methods = c('limma','scran'),
-
-                  # arguments for signature matrics construction
-                  refMatrix_methods = c('raw','limma','scran'),
-
-                  # arguments to include tcga
-                  include_tcga = T,
-                  tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC')
-                  )
 }
 }

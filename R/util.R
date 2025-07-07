@@ -79,35 +79,67 @@ append_ABSOLUTE_pancanatlas = function(tumor_purity_table,ABSOLUTE_pancanatlas =
 }
 
 
+
+#' Build TCGA bulk expression object for a given cohort
+#' @description
+#' Downloads TCGA expression data (FPKM) for the specified cohort from UCSC Xena Browser, converts it to TPM, and attaches estimated tumor purity for each sample as an approximation of malignant proportion.
+#'
+#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
+#' @param to_use_genes Character vector. Genes to include in the output. If NULL, all available genes are used.
+#' @param mapfile_link Character. URL for the gene mapping file (optional; provide only if a custom mapping file is needed).
+#' @param fpkmfile_link Character. URL for the FPKM file (optional; provide only if a custom FPKM file is needed).
+#'
+#' @return a TCGA bulk expression object with TPM expression and purity estimates, which can be used as  an approximation of malignant proportion.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' build_tcga_obj('SKCM')
+#' }
 build_tcga_obj = function(tcga_abbreviation,
-                          to_use_genes,
-                          purity_methods){
+                          to_use_genes = NULL,
+                          mapfile_link = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v36.annotation.gtf.gene.probemap',
+                          fpkmfile_link = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-THCA.star_fpkm.tsv.gz'){
   if(is.na(tcga_abbreviation)){
     stop('Please provide the TCGA cohort abbreviation, such as "SKCM", to specifically include this cohort in the bulk object')
   }
 
   tcga_abbreviation = stringr::str_to_upper(tcga_abbreviation)
-  mapfile = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v22.annotation.gene.probeMap'
-  fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.htseq_fpkm.tsv.gz')
+  mapfile = 'https://gdc-hub.s3.us-east-1.amazonaws.com/download/gencode.v36.annotation.gtf.gene.probemap'
+  fpkmfile = paste0('https://gdc-hub.s3.us-east-1.amazonaws.com/download/TCGA-',tcga_abbreviation,'.star_fpkm.tsv.gz')
+
+  map_resp1 <- HEAD(mapfile)
+
+  if(status_code(map_resp1) != 200){
+    map_resp2 <- HEAD(mapfile_link)
+    if(status_code(map_resp2) != 200){
+      stop('Neither the default nor the provided mapfile_link is valida. Please check the UCSC Xena Browser for the most up-to-date link')
+    }
+  }
+
+  fpkm_resp1 <- httr::HEAD(fpkmfile)
+  if (httr::status_code(fpkm_resp1) != 200) {
+    fpkm_resp2 <- httr::HEAD(fpkmfile_link)
+    if (httr::status_code(fpkm_resp2) != 200) {
+      stop('Neither the default nor the provided fpkmfile_link is valida. Please check the UCSC Xena Browser for the most up-to-date link')
+    }
+  }
 
   message('downloading tcga expression from Xena browser')
+  if(is.null(to_use_genes)){
+    gene_mapping = read.delim(mapfile)
+    to_use_genes = gene_mapping$gene
+  }
   tcga_expr = xnea_fpkm2tpm(fpkmfile,mapfile,to_use_genes)
   purity_allMethods = tumor_purity(colnames(tcga_expr))
 
-  purity = matrix(NA,
-                  nrow = ncol(tcga_expr),
-                  ncol = length(purity_methods),dimnames = list(colnames(tcga_expr),purity_methods))
-
-  for(i in 1:length(purity_methods)){
-    purity[,i] = purity_allMethods[,purity_methods[i]][match(colnames(tcga_expr),rownames(purity_allMethods))]
-  }
-
   tcga_obj = list()
-  tcga_obj$simulated_bulk = tcga_expr
-  tcga_obj$simulated_frac = purity
+  tcga_obj$tcga_bulk = tcga_expr
+  tcga_obj$tcga_purity = purity_allMethods
 
   return(tcga_obj)
 }
+
 
 get_subcluster = function(scExpr,cell_type_labels, min.subcluster.size = 20){
   require(scran,quietly = T) %>% suppressMessages()

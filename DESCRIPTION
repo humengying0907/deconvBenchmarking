@@ -1,13 +1,13 @@
 Package: deconvBenchmarking
 Title: Benchmarking deconvolution methods using bulk data simulated under various strategies
-Version: 0.1.0
+Version: 0.1.1
 Author: Mengying Hu, Maria Chikina
 Maintainer: Mengying <mhu5304@gmail.com>
 Description: deconvBenchmarking is an R packge to benchmark different deconvolution methods using bulk data simulated under different simulation strategies. 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 3.5.0),
     dplyr,
@@ -46,4 +46,6 @@ Suggests:
     scran,
     msigdbr,
     ComplexHeatmap,
-    viridis
+    viridis,
+    Seurat,
+    SCISSORS

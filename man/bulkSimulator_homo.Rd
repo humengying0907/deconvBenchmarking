@@ -10,6 +10,7 @@ bulkSimulator_homo(
   colnames_of_cellType = NA,
   simulated_frac = NULL,
   ncells_perSample = 500,
+  export_cellUsage = F,
   n.core = 1
 )
 }
@@ -23,6 +24,8 @@ bulkSimulator_homo(
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns}
 
 \item{ncells_perSample}{number of cells to pool together to generate a simulated bulk sample. Default 500}
+
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
 }

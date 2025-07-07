@@ -9,10 +9,10 @@ bulkSimulator_SCDC(
   scMeta,
   colnames_of_cellType = NA,
   colnames_of_sample = NA,
+  nbulk = 10,
   disease = NULL,
   ct.sub = NULL,
   prop_mat = NULL,
-  nbulk = 10,
   samplewithRep = T
 )
 }
@@ -25,13 +25,13 @@ bulkSimulator_SCDC(
 
 \item{colnames_of_sample}{column name that corresponds to sampleID in scMeta}
 
+\item{nbulk}{number of simulated bulk samples}
+
 \item{disease}{indicate the health condition of subjects}
 
 \item{ct.sub}{a subset of cell types that are selected to construct pseudo bulk samples. If NULL, then all cell types are used.}
 
 \item{prop_mat}{manually input the cell-type proportion for pseudo bulk samples; with cellTypes in columns and samples in rows}
-
-\item{nbulk}{number of simulated bulk samples}
 
 \item{samplewithRep}{logical, randomly sample single cells with replacement. Default is T}
 }

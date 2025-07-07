@@ -32,7 +32,7 @@ We provided a useful `bulkSimulator()` function with 7 built-in simulation strat
 
 And three other methods sourced from previously published benchmarking work or resources that offer bulk simulation capabilities.
 
--   **favilaco**: [source code](https://github.com/favilaco/deconv_benchmark/blob/master/helper_functions.R#L27C1-L27C1)
+-   **favilaco**: [source code](https://github.com/favilaco/deconv_benchmark/blob/master/helper_functions.R#L27C1-L27C1) (legacy)
 -   **immunedeconv**: [source code](https://www.rdocumentation.org/packages/immunedeconv/versions/1.1.0/topics/make_bulk_eset)
 -   **SCDC**: [source code](https://rdrr.io/github/meichendong/SCDC/man/generateBulk_norep.html)
 
@@ -51,7 +51,6 @@ The example plots shown below are derived from practical function applications f
 ## Tutorial
 We provided a [tutorial](https://humengying0907.github.io/deconvBenchmarking_tutorial.html) for detailed implementation of the benchmarking framework and bulk simulation using an example dataset.
 
-## Reference
-Heterogeneous pseudobulk simulation enables realistic benchmarking of cell-type deconvolution methods \
-Mengying Hu, Maria Chikina \
-bioRxiv 2023.01.05.522919; doi: https://doi.org/10.1101/2023.01.05.522919
+## Cite Our Method
+If you use our bulk simulation methods in your research, please cite the following: \
+Hu, M., & Chikina, M. (2024). Heterogeneous pseudobulk simulation enables realistic benchmarking of cell-type deconvolution methods. Genome biology, 25(1), 169. https://doi.org/10.1186/s13059-024-03292-w

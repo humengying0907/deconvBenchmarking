@@ -15,10 +15,6 @@ benchmarking_deconv(
   colnames_of_sample = NA,
   refFree_methods = c("linseed", "debCAM"),
   k = NA,
-  Bayesian_methods = c("InstaPrism"),
-  colnames_of_cellState = NA,
-  key = NA,
-  InstaPrism.n.iter = 100,
   immunedeconv_methods = c("xcell", "mcp_counter", "epic", "quantiseq", "timer", "abis",
     "consensus_tme", "estimate"),
   tcga_abbreviation = NA,
@@ -39,31 +35,19 @@ Make sure you have the required packages installed to use these methods. Set to 
 
 \item{cibersort_path}{path to CIBERSORT.R. This argument is required for 'cibersort' regression method}
 
-\item{scExpr}{Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods,
-as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC' and all Bayesian methods.}
+\item{scExpr}{Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC'
+as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC'}
 
-\item{scMeta}{dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' and all Bayesian methods}
+\item{scMeta}{dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC'}
 
-\item{colnames_of_cellType}{column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC' method and all Bayesian methods}
+\item{colnames_of_cellType}{column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC'}
 
-\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC' method and/or all Bayesian methods}
+\item{colnames_of_sample}{column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC'}
 
 \item{refFree_methods}{a character vector indicating which methods to use for reference free deconvolution. Use \code{\link{list_deconv_refFree}} to check for available method names
 and suggested packages associated them. Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed..}
 
 \item{k}{argument for reference free methods: number of cell types in bulk expression. If set to NA, will be default to true number of cell types in bulk expression}
-
-\item{Bayesian_methods}{a character vector indicating which Bayesian_methods to use. Use \code{\link{list_deconv_Bayesian}} to check for available method names and suggested packages associated them.
-Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed.}
-
-\item{colnames_of_cellState}{argument needed for Bayesian methods. It denotes column name that corresponds to cellState in scMeta. Set to NA if this information is not available.
-In this case, the function will utilize cross-sample heterogeneity and assign cell states according to their original sampleID
-for the key cell type. For the remaining cell types, the cell state will be the same as the cell type.}
-
-\item{key}{argument needed for Bayesian methods: name of the malignant cell type. Upon setting the key parameter, the updated malignant reference
-will be unique for each individual. Set to NA if there is no malignant cells in the problem, and the updated reference will be the same for all the individuals}
-
-\item{InstaPrism.n.iter}{number of iterations for 'InstaPrism' method. Default = 100}
 
 \item{immunedeconv_methods}{a character vector indicating which methods to use from immunedeconv package. Available methods include:
 'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'. Make sure you have the suggested package'immunedeconv' installed before using immunedeconv methods.
@@ -73,7 +57,7 @@ Set to NULL if no immunedeconv_methods is needed.}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
 
-\item{...}{additional arguments to be passed to the following functions: deconv_marker(), deconv_regression(), deconv_refFree(), deconv_Bayesian() and immunedeconv::deconvolute()}
+\item{...}{additional arguments to be passed to the following functions: deconv_marker(), deconv_regression(), deconv_refFree(), and immunedeconv::deconvolute()}
 }
 \value{
 a list of deconvolution results for each bulk expression in the benchmarking_obj
@@ -84,7 +68,7 @@ Perform deconvolution on the benchmarking_obj
 \examples{
 \dontrun{
 # first create a benchmarking_obj using benchmarking_init():
-benchmarking_obj = benchmarking_init(scExpr = scExpr,
+benchmarking_init(scExpr = scExpr,
                   scMeta = scMeta,
                   colnames_of_cellType = 'cell_type',
                   colnames_of_sample = 'sampleID',
@@ -97,11 +81,18 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   training_ratio = 0.5,
                   split_by = "cell",
 
-                  # arguments for bulk simulation
-                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                  # arguments for bulk simulation: select bulk simulation methods
+                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 
-                  # argument for semi/heter_sampleIDfree bulk simulation method
+                  # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
+
+                  # general simulation parameters
+                  ncells_perSample = 500,
+                  min_chunkSize = 20,
+                  use_chunk = 'random',
+
+                  # parameters for adjusting heterogeneity in sample ID-free bulk simulation
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
                   max.num.cs = NA,
@@ -112,10 +103,6 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   # arguments for signature matrics construction
                   refMatrix_methods = c('raw','limma','scran'),
 
-                  # arguments to include tcga
-                  include_tcga = T,
-                  tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 
                   # export files for autogeneS and cibersortx
                   create_autogeneS_input = T,
@@ -128,8 +115,7 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
 # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'
 # 2) regression-based methods: 'nnls','cibersort','MuSiC','wRLM','RPC'
 # 3) reference free methods: 'linseed','debCAM'
-# 4) Bayesian-based methods: 'InstaPrism
-# 5) other deconvolution methods from immunedeconv package:
+# 4) other deconvolution methods from immunedeconv package:
 #     'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'
 benchmarking_deconv(benchmarking_obj,
 
@@ -146,10 +132,6 @@ benchmarking_deconv(benchmarking_obj,
 
                     # arguments for reference-free methods
                     refFree_methods = c('linseed','debCAM'),
-
-                    # arguments for Bayesian-based methods
-                    Bayesian_methods = c('InstaPrism'),
-                    key = 'malignant',  # this argument togther with 'colnames_of_sample' is highly recommended to run Bayesian based methods
 
                     # arguments for other deconvolution methods
                     immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'),
@@ -170,7 +152,6 @@ benchmarking_deconv(benchmarking_obj,
 
                     # set methods argument to NULL to disable deconvolution with these methods
                     refFree_methods = NULL,
-                    Bayesian_methods = NULL,
                     immunedeconv_methods = NULL,
 
                     n.core = 4)

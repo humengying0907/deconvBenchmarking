@@ -80,7 +80,7 @@ create_train_test_splitting<-function(scMeta,
 #'
 #' @param nbulk number of simulated bulk samples. This argument is required when simulated_frac is not available; in this case, the function
 #'    will generate simulated_frac automatically using fracSimulator_Beta() with the nbulk argument.
-#' @param fixed_cell_type argument for fracSimulator_Beta() function,  this argument will be called when simulated_frac is not available.
+#' @param fixed_cell_type argument for fracSimulator_Beta() function,  this argument is applicable when simulated_frac is not available.
 #'    It is a character denoting the target cell type for which we strive to faithfully preserve its distribution. It is recommended to set this parameter
 #'    to the name of the malignant cell types. If left undefined, the fracSimulator_Beta() will automatically select the most abundant cell type as 'fixed_cell_type'.
 #'
@@ -91,31 +91,29 @@ create_train_test_splitting<-function(scMeta,
 #'
 #' @param bulkSimulator_methods a character vector indicating which bulk simulation methods to use. Use \code{\link{list_bulkSimulator}} to check for available method names and suggested packages associated them.
 #'    Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed.
-#' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
-#'    This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument
 #' @param simulated_frac a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns. If set to NULL, the function will generate simulated_frac automatically
 #'    using 'nbulk' and 'fixed_cell_type' arguments.
-#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types.
+#' @param heter_cell_type name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell-type.
 #'     This argument is required for 'semi' and 'heter_sampleIDfree' bulk simulation methods
-#' @param dirichlet_cs_par a numeric value determine the dispersion level of subclusters. With lower value indicating higher dispersion level. Default = 0.1. This is an argument required for 'heter_sampleIDfree' simulation method only.
-#' @param min.subcluster.size minimum size of a subcluster. This argument is required when colnames_of_subcluster is NA. Default = 20. This is an argument for 'heter_sampleIDfree' simulation method only.
-#' @param max.num.cs maximum number of sub-clusters to aggregate for each cluster. If set to NA, this number will be equal to number of unique sub-clusters within each cell type. This is an argument for 'heter_sampleIDfree' method only.
+#' @param ncells_perSample number of cells to aggregate for each simulated bulk sample. This is an argument required for 'homo', 'semi', 'immunedeconv' and 'SCDC' methods
+#' @param min_chunkSize minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth. This is an argument required for 'semi' and 'heter' methods
+#' @param use_chunk a character indicating which cells to pool together for the a particular cell-type component. Default='all' other options include 'random'.
+#'    When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
+#'    when use_chunk = 'random', randomly select 50-100% of the cells belonging to the same patient for a given cell type. This is an argument required for 'semi' and 'heter' methods
+#' @param colnames_of_subcluster column name that corresponds to subcluster info in scMeta, where subcluster contains sub-clustering information for each cellType.
+#'    This is an argument required for 'heter_sampleIDfree' method only. Set to NA if subclustering information is not available; the function will then generate subclustering information automatically using the 'min.subcluster.size' argument
+#' @param export_cellUsage a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F. This is an argument is only applicable to 'homo', 'semi', 'heter' and 'heter_sampleIDfree' methods
 #'
 #' @param refMarkers_methods a character vector specifying the desired methods for generating cell-type specific markers. Use \code{\link{list_refMarkers}} to check for available method names and suggested packages associated them.
-#'    Make sure you have the required packages installed to use these methods
+#'    Make sure you have the required packages installed to use these methods. Set to NULL if cell-type specific markers are not required
 #' @param colnames_of_cellState column name that corresponds to the cellState in scMeta. This argument is only required for scran-based marker identification,
 #'    where the differential expression (DE) analysis is performed between every pair of cell states from different cell types. Set this parameter to NA if the information is not available.
 #'    In that case, the function will treat all cells from the same cell type identically.
 #'
 #' @param refMatrix_methods a character vector specifying the desired methods for generating signature matrices. Use \code{\link{list_refMarix}} to check for available method names and suggested packages associated them.
-#'    Make sure you have the required packages installed to use these methods
+#'    Make sure you have the required packages installed to use these methods. Set to NULL if signature matrices are not needed.
 #'
-#' @param include_tcga a logicial variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
-#' @param tcga_abbreviation a character indicating tcga abbreviation for the tcga cohort to include, for example 'SKCM'
-#' @param purity_methods a character vector indicating tumor purity estimation method that is utilized as a means of estimating the malignant proportion within the exported object for TCGA expression data.
-#'    Available methods include 'ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC' and 'CPE' and 'ABSOLUTE_GDC' (ABSOLUTE_GDC contains ABSOLUTE downloaded from https://gdc.cancer.gov/about-data/publications/pancanatlas).
-#'    Default = c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE', 'ABSOLUTE_GDC'). Make sure you have the suggested package 'TCGAbiolinks' installed before setting include_tcga = T
-#'
+#' @param include_tcga a logical variable determining whether to include tcga in the output object. If True, the function will download the specified TCGA cohort from the xena browser
 #' @param create_autogeneS_input a logical variable determine whether to create input data for autogeneS, which is a python based approach to construct signature matrix. If true, the function
 #'    will automatically export the input data in 'autogeneS_input' folder and generate a command to run autogeneS with default or user-defined autogeneS hyperparameters
 #' @param autogeneS_input_file_name desired file name to save input data for autogeneS
@@ -133,9 +131,8 @@ create_train_test_splitting<-function(scMeta,
 #'    The function performs the following steps: (1) It divides the cells into training and testing cells;
 #'    (2) the training cells are utilized to generate reference profiles, such as markers and signature matrices;
 #'    (3) the testing cells are used to generate simulated bulk expression, which is then employed for deconvolution purposes;
-#'    (4) additionally, this function offers the flexibility to include a TCGA cohort as part of the object for future deconvolution benchmarking
 #'
-#' @return a list containing the following elements: 1) a list of training/testing cells; 2) a list of simulated bulk object and/or tcga expression;
+#' @return a list containing the following elements: 1) a list of training/testing cells; 2) a list of simulated bulk object;
 #'    3) a list of cell-type specific markers; 4) a list of signature matrices
 #' @export
 #'
@@ -155,11 +152,18 @@ create_train_test_splitting<-function(scMeta,
 #'                   training_ratio = 0.5,
 #'                   split_by = "cell",
 #'
-#'                   # arguments for bulk simulation
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'                   # arguments for bulk simulation: select bulk simulation methods
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,
@@ -170,11 +174,6 @@ create_train_test_splitting<-function(scMeta,
 #'                   # arguments for signature matrics construction
 #'                   refMatrix_methods = c('raw','limma','scran'),
 #'
-#'                   # arguments to include tcga
-#'                   include_tcga = T,
-#'                   tcga_abbreviation = 'SKCM',
-#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
-#'
 #'                   # export files for autogeneS and cibersortx
 #'                   create_autogeneS_input = T,
 #'                   create_cibersortx_input = T,
@@ -182,30 +181,6 @@ create_train_test_splitting<-function(scMeta,
 #'                   n.core = 4
 #'                   )
 #'
-#' # generate a benchmarking object containing only TCGA cohort
-#' # and use all the single cells to generate reference markers and signature matrices
-#' benchmarking_init(scExpr = scExpr,
-#'                   scMeta = scMeta,
-#'                   colnames_of_cellType = 'cell_type',
-#'                   colnames_of_sample = 'sampleID',
-#'
-#'                   # use all cells to build scRNA reference
-#'                   training_ratio = 1,
-#'
-#'                   # set bulkSimulator_methods to NULL to disable bulk simulation
-#'                   bulkSimulator_methods = NULL,
-#'
-#'                   # argument for marker constructions
-#'                   refMarkers_methods = c('limma','scran'),
-#'
-#'                   # arguments for signature matrics construction
-#'                   refMatrix_methods = c('raw','limma','scran'),
-#'
-#'                   # arguments to include tcga
-#'                   include_tcga = T,
-#'                   tcga_abbreviation = 'SKCM',
-#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC')
-#'                   )
 #' }
 benchmarking_init = function(scExpr,scMeta,
 
@@ -223,12 +198,13 @@ benchmarking_init = function(scExpr,scMeta,
 
                              # arguments for bulkSimulator()
                              bulkSimulator_methods = NULL,
-                             colnames_of_subcluster = NA,
                              simulated_frac = NULL,
                              heter_cell_type = NA,
-                             dirichlet_cs_par = 0.1,
-                             min.subcluster.size = 20,
-                             max.num.cs = NA,
+                             ncells_perSample=500,
+                             min_chunkSize=5,
+                             use_chunk = 'all',
+                             colnames_of_subcluster = NA,
+                             export_cellUsage = F,
 
                              # arguments for refMarkers
                              refMarkers_methods = c('limma','scran'),
@@ -240,7 +216,6 @@ benchmarking_init = function(scExpr,scMeta,
                              # arguments for including TCGA as part of evaluation
                              include_tcga = F,
                              tcga_abbreviation = NA,
-                             purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 
                              # arguments for pre_refMatrix_autogeneS
                              create_autogeneS_input = F,
@@ -256,8 +231,9 @@ benchmarking_init = function(scExpr,scMeta,
 
   arg_list = list(...)
   fracSimulator_Beta_args = arg_list[names(arg_list) %in% c('min.frac','showFractionPlot')]
-  bulkSimulator_args = arg_list[names(arg_list) %in% c('ncells_perSample','min_chunkSize','use_chunk','min.percentage','max.percentage',
-                                                       'seed','use_simulated_frac_as_prop_mat','disease','ct.sub','samplewithRep')]
+  bulkSimulator_args = arg_list[names(arg_list) %in% c('dirichlet_cs_par','min.subcluster.size','max.num.cs',
+                                                       'min.percentage','max.percentage','seed',
+                                                       'disease','ct.sub','prop_mat','samplewithRep')]
   refMarkers_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','spec_cutoff_for_DE','sigMatrixList')]
   refMatrix_args = arg_list[names(arg_list) %in% c('hv_genes','log2FC','minimum_n','maximum_n','order_by','spec_cutoff_for_DE','markerList')]
   pre_refMatrix_autogeneS_args = arg_list[names(arg_list) %in% c('hv_genes','max.spec_cutoff_for_autogeneS','display_autogeneS_command','ngen',
@@ -265,6 +241,69 @@ benchmarking_init = function(scExpr,scMeta,
   pre_refMatrix_cibersortx_args = arg_list[names(arg_list) %in% c('downsample','downsample_ratio')]
 
   benchmarking_obj = list()
+
+  if (!is.null(bulkSimulator_methods)) {
+
+    if('favilaco' %in% bulkSimulator_methods){
+      stop('favilaco bulk simulation methods is no longer supported since deconvBenchmarking v0.1.1')
+    }
+
+    supported_methods <- c('homo', 'semi', 'heter', 'heter_sampleIDfree', 'immunedeconv', 'SCDC')
+    if (any(!bulkSimulator_methods %in% supported_methods)) {
+      stop(
+        "Some bulkSimulation methods are not supported. Please provide only valid names. Supported methods are: ",
+        paste(supported_methods, collapse = ", ")
+      )
+    }
+
+    if (is.null(colnames_of_cellType) || is.na(colnames_of_cellType)) {
+      stop('Please provide colnames_of_cellType when calling bulk simulation.')
+    }
+
+    if (!fixed_cell_type %in% unique(scMeta[,colnames_of_cellType])) {
+      stop('Please make sure the provided "fixed_cell_type" is a cell type from scMeta.')
+    }
+
+    if (any(c('heter', 'semi') %in% bulkSimulator_methods)) {
+      if (is.na(heter_cell_type)) {
+        stop('Please provide "heter_cell_type" when using semi/heter simulation.')
+      } else {
+        if (!heter_cell_type %in% unique(scMeta[,colnames_of_cellType])) {
+          stop('Please make sure the provided "heter_cell_type" is a cell type from scMeta.')
+        }
+      }
+    }
+
+    if('heter_sampleIDfree' %in% bulkSimulator_methods){
+
+      if (!requireNamespace("scran", quietly = TRUE)){
+        stop('Please make sure you have scran installed to run heter_sampleIDfree bulk simulation')
+      }
+    }
+
+    if('immunedeconv' %in% bulkSimulator_methods){
+      if (!requireNamespace("immunedeconv", quietly = TRUE)){
+        stop('Please make sure you have immunedeconv installed to run immunedeconv bulk simulation')
+      }
+    }
+
+    if('SCDC' %in% bulkSimulator_methods){
+      if (!requireNamespace("SCDC", quietly = TRUE)){
+        stop('Please make sure you have SCDC installed to run SCDC bulk simulation')
+      }
+    }
+
+  }
+
+  if('scran' %in% refMarkers_methods || 'scran' %in% refMatrix_methods){
+    if (!requireNamespace("scran", quietly = TRUE)){
+      stop('Please make sure you have scran installed to run refMarkers_scran')
+    }
+
+    if (!requireNamespace("BayesPrism", quietly = TRUE)){
+      stop('Please make sure you have BayesPrism installed to run refMarkers_scran')
+    }
+  }
 
   message('split scRNA into training and testing')
   splitting = create_train_test_splitting(scMeta, colnames_of_cellType, colnames_of_sample,
@@ -320,7 +359,6 @@ benchmarking_init = function(scExpr,scMeta,
                                                          fixed_cell_type = fixed_cell_type),
                                                     fracSimulator_Beta_args))
 
-
       cat('\n')
     }
 
@@ -329,17 +367,17 @@ benchmarking_init = function(scExpr,scMeta,
                                                        scExpr = scExpr_test,
                                                        scMeta = scMeta_test,
                                                        colnames_of_cellType = colnames_of_cellType,
-                                                       colnames_of_subcluster = colnames_of_subcluster,
                                                        colnames_of_sample = colnames_of_sample,
                                                        simulated_frac = simulated_frac,
                                                        heter_cell_type  = heter_cell_type,
-                                                       dirichlet_cs_par = dirichlet_cs_par ,
-                                                       min.subcluster.size = min.subcluster.size,
-                                                       max.num.cs = max.num.cs,
+                                                       ncells_perSample=ncells_perSample,
+                                                       min_chunkSize=min_chunkSize,
+                                                       use_chunk = use_chunk,
+                                                       colnames_of_subcluster = colnames_of_subcluster,
+                                                       export_cellUsage = export_cellUsage,
                                                        nbulk = nbulk,
                                                        n.core = n.core),
                                                   bulkSimulator_args))
-
 
     cat('\n')
 
@@ -348,11 +386,7 @@ benchmarking_init = function(scExpr,scMeta,
   }
 
   if(include_tcga == T){
-    message('include TCGA in the bulk object for further evaluation')
-    to_use_genes = rownames(scExpr)
-    bulk_simulation_obj[[paste0('tcga_',tcga_abbreviation)]] = build_tcga_obj(tcga_abbreviation,
-                                                                              to_use_genes,
-                                                                              purity_methods)
+    message('"include_tcga" option is no longer supported since deconvBenchmarking v0.1.1, please refer to build_tcga_obj() function to manually create a tcga object')
     cat('\n')
   }
 
@@ -370,7 +404,7 @@ benchmarking_init = function(scExpr,scMeta,
     marker_list = list()
   }
 
-  if(!is.null(refMarkers_methods)){
+  if(!is.null(refMatrix_methods)){
     message('generate a list of signature matrices from training scRNA')
     query = all(intersect(refMarkers_methods,refMatrix_methods) %in% c('limma','scran')) & length(intersect(refMarkers_methods,refMatrix_methods)>0)
 
@@ -417,7 +451,7 @@ benchmarking_init = function(scExpr,scMeta,
                                             cibersortx_input_file_name = cibersortx_input_file_name),
                                        pre_refMatrix_cibersortx_args))
 
-        cat('\n')
+    cat('\n')
   }
 
   # organize all together
@@ -427,6 +461,9 @@ benchmarking_init = function(scExpr,scMeta,
   benchmarking_obj$sigMarix_list = sigMarix_list
 
   return(benchmarking_obj)
+
+
+
 }
 
 
@@ -441,28 +478,20 @@ benchmarking_init = function(scExpr,scMeta,
 #'    Use \code{\link{list_deconv_regression}} to check for available method names and suggested packages associated them.
 #'    Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed. Set to NULL if no regression_based deconvolution is needed.
 #' @param cibersort_path path to CIBERSORT.R. This argument is required for 'cibersort' regression method
-#' @param scExpr Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC' and all Bayesian methods,
-#'    as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC' and all Bayesian methods.
-#' @param scMeta dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC' and all Bayesian methods
-#' @param colnames_of_cellType column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC' method and all Bayesian methods
-#' @param colnames_of_sample column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC' method and/or all Bayesian methods
+#' @param scExpr Single-cell expression matrix used to simulate bulk data the benchmarking_obj, with genes in rows and cells in columns. This argument is required for 'MuSiC'
+#'    as they rely on a reference single-cell profile in their methods. Note that only training cells in the benchmarking_obj will be used to create a single-cell reference for 'MuSiC'
+#' @param scMeta dataframe that stores annotation info of each cells, rownames of scMeta should be equal to colnames of scExpr. This argument is required for 'MuSiC'
+#' @param colnames_of_cellType column name that corresponds to cellType in scMeta. This argument is required for 'MuSiC'
+#' @param colnames_of_sample column name that corresponds to sampleID in scMeta. This argument is required for 'MuSiC'
 #' @param refFree_methods a character vector indicating which methods to use for reference free deconvolution. Use \code{\link{list_deconv_refFree}} to check for available method names
 #'    and suggested packages associated them. Make sure you have the required packages installed to use these methods.Set to NULL if no bulk simulation is needed..
 #' @param k argument for reference free methods: number of cell types in bulk expression. If set to NA, will be default to true number of cell types in bulk expression
-#' @param Bayesian_methods a character vector indicating which Bayesian_methods to use. Use \code{\link{list_deconv_Bayesian}} to check for available method names and suggested packages associated them.
-#'    Make sure you have the required packages installed to use these methods. Set to NULL if no bulk simulation is needed.
-#' @param colnames_of_cellState argument needed for Bayesian methods. It denotes column name that corresponds to cellState in scMeta. Set to NA if this information is not available.
-#'    In this case, the function will utilize cross-sample heterogeneity and assign cell states according to their original sampleID
-#'    for the key cell type. For the remaining cell types, the cell state will be the same as the cell type.
-#' @param key argument needed for Bayesian methods: name of the malignant cell type. Upon setting the key parameter, the updated malignant reference
-#'    will be unique for each individual. Set to NA if there is no malignant cells in the problem, and the updated reference will be the same for all the individuals
-#' @param InstaPrism.n.iter number of iterations for 'InstaPrism' method. Default = 100
 #' @param immunedeconv_methods a character vector indicating which methods to use from immunedeconv package. Available methods include:
 #'    'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'. Make sure you have the suggested package'immunedeconv' installed before using immunedeconv methods.
 #'    Set to NULL if no immunedeconv_methods is needed.
 #' @param tcga_abbreviation a character string indicating tcga-abbreviation for the bulk data to be deconvoluted, for example 'skcm'. Required for 'timer' and 'consensus_tme'.
 #' @param n.core number of cores to use for parallel programming. Default = 1
-#' @param ... additional arguments to be passed to the following functions: deconv_marker(), deconv_regression(), deconv_refFree(), deconv_Bayesian() and immunedeconv::deconvolute()
+#' @param ... additional arguments to be passed to the following functions: deconv_marker(), deconv_regression(), deconv_refFree(), and immunedeconv::deconvolute()
 #'
 #' @return a list of deconvolution results for each bulk expression in the benchmarking_obj
 #' @export
@@ -470,7 +499,7 @@ benchmarking_init = function(scExpr,scMeta,
 #' @examples
 #' \dontrun{
 #' # first create a benchmarking_obj using benchmarking_init():
-#' benchmarking_obj = benchmarking_init(scExpr = scExpr,
+#' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
@@ -483,11 +512,18 @@ benchmarking_init = function(scExpr,scMeta,
 #'                   training_ratio = 0.5,
 #'                   split_by = "cell",
 #'
-#'                   # arguments for bulk simulation
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'                   # arguments for bulk simulation: select bulk simulation methods
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,
@@ -498,10 +534,6 @@ benchmarking_init = function(scExpr,scMeta,
 #'                   # arguments for signature matrics construction
 #'                   refMatrix_methods = c('raw','limma','scran'),
 #'
-#'                   # arguments to include tcga
-#'                   include_tcga = T,
-#'                   tcga_abbreviation = 'SKCM',
-#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 #'
 #'                   # export files for autogeneS and cibersortx
 #'                   create_autogeneS_input = T,
@@ -514,8 +546,7 @@ benchmarking_init = function(scExpr,scMeta,
 #' # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'
 #' # 2) regression-based methods: 'nnls','cibersort','MuSiC','wRLM','RPC'
 #' # 3) reference free methods: 'linseed','debCAM'
-#' # 4) Bayesian-based methods: 'InstaPrism
-#' # 5) other deconvolution methods from immunedeconv package:
+#' # 4) other deconvolution methods from immunedeconv package:
 #' #     'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'
 #' benchmarking_deconv(benchmarking_obj,
 #'
@@ -532,10 +563,6 @@ benchmarking_init = function(scExpr,scMeta,
 #'
 #'                     # arguments for reference-free methods
 #'                     refFree_methods = c('linseed','debCAM'),
-#'
-#'                     # arguments for Bayesian-based methods
-#'                     Bayesian_methods = c('InstaPrism'),
-#'                     key = 'malignant',  # this argument togther with 'colnames_of_sample' is highly recommended to run Bayesian based methods
 #'
 #'                     # arguments for other deconvolution methods
 #'                     immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'),
@@ -556,7 +583,6 @@ benchmarking_init = function(scExpr,scMeta,
 #'
 #'                     # set methods argument to NULL to disable deconvolution with these methods
 #'                     refFree_methods = NULL,
-#'                     Bayesian_methods = NULL,
 #'                     immunedeconv_methods = NULL,
 #'
 #'                     n.core = 4)
@@ -574,12 +600,6 @@ benchmarking_deconv = function(benchmarking_obj,
                                # arguments for deconv_refFree()
                                refFree_methods = c('linseed','debCAM'),
                                k = NA,
-
-                               # arguments for deconv_Bayesian
-                               Bayesian_methods = c('InstaPrism'),
-                               colnames_of_cellState = NA,
-                               key = NA,
-                               InstaPrism.n.iter = 100,
 
                                # arguments for methods from immunedeconv package
                                immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis',
@@ -620,13 +640,6 @@ benchmarking_deconv = function(benchmarking_obj,
     }
   }
 
-  if('InstaPrism' %in% Bayesian_methods){
-    if(is.null(scExpr) | is.null(scMeta) | is.na(colnames_of_cellType) ){
-      stop('please provide the following required arguments to run InstaPrism: scExpr, scMeta, colnames_of_cellType;
-           additionally, it is highly recommended to provide the "colnames_of_sample" and "key" arguments to run InstaPrism')
-    }
-  }
-
   arg_list = list(...)
   deconv_marker_args = arg_list[names(arg_list) %in% c('alpha','sigma','epsilon','maxIter')]
   deconv_regression_args = arg_list[names(arg_list) %in% c('QN_cibersort','skip_raw_cibersort','normalize_MuSiC',
@@ -635,7 +648,6 @@ benchmarking_deconv = function(benchmarking_obj,
   deconv_refFree_args = arg_list[names(arg_list) %in% c('corner.strategy','dim.rdc','thres.low','thres.high','cluster.method',
                                                         'cluster.num','MG.num.thres','lof.thres','quickhull','quick.select',
                                                         'sample.weight','appro3','generalNMF','cores')]
-  deconv_Bayesian_args = arg_list[names(arg_list) %in% c('outlier.cut','outlier.fraction')]
 
   immunedeconv_deconvolute_args = arg_list[names(arg_list) %in% c('tumor','arrays','column','rmgenes',
                                                                   'scale_mrna','expected_cell_types')]
@@ -651,13 +663,12 @@ benchmarking_deconv = function(benchmarking_obj,
       scExpr_train = scExpr
       scMeta_train = scMeta
       warning('The provided scRNA profiles does not include all the training cells used in the splitting steps.
-              The provided scRNA profile will be used for MuSiC and/or Bayesian methods.')
+              The provided scRNA profile will be used for MuSiC')
     }
   }else{
     scExpr_train = NULL
     scMeta_train = NULL
   }
-
 
   for(bulk in names(benchmarking_obj$bulk_simulation_obj)){
 
@@ -703,25 +714,6 @@ benchmarking_deconv = function(benchmarking_obj,
       bulk_deconvRes = c(bulk_deconvRes,refFree_deconvRes)
     }
 
-    if(!is.null(Bayesian_methods)){
-
-      Bayesian_deconvRes = do.call(deconv_Bayesian,c(list(methods =Bayesian_methods,
-                                                          bulk_expr = bulk_expr,
-                                                          scExpr = scExpr_train,
-                                                          scMeta = scMeta_train,
-                                                          colnames_of_cellType = colnames_of_cellType,
-                                                          colnames_of_cellState = colnames_of_cellState,
-                                                          colnames_of_sample = colnames_of_sample,
-                                                          key = key,
-                                                          n.iter = InstaPrism.n.iter,
-                                                          n.core = n.core),
-                                                     deconv_Bayesian_args))
-
-
-      bulk_deconvRes = c(bulk_deconvRes,Bayesian_deconvRes)
-
-    }
-
     if(!is.null(immunedeconv_methods)){
       immunedeconv_deconvRes = list()
 
@@ -765,20 +757,32 @@ benchmarking_deconv = function(benchmarking_obj,
 #' # a complete pipeline to benchmarking deconvolution methods using bulk data simulated under various strategies
 #'
 #' # first create a benchmarking_obj using benchmarking_init():
-#' benchmarking_obj = benchmarking_init(scExpr = scExpr,
+#' # a standard benchmarking pipeline
+#' benchmarking_init(scExpr = scExpr,
 #'                   scMeta = scMeta,
-#'
 #'                   colnames_of_cellType = 'cell_type',
 #'                   colnames_of_sample = 'sampleID',
 #'
 #'                   # argument for fracSimulator_Beta()
+#'                   nbulk = 100,
 #'                   fixed_cell_type = 'malignant',
 #'
-#'                   # arguments for bulk simulation
-#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+#'                   # argument for training/testing splitting:
+#'                   training_ratio = 0.5,
+#'                   split_by = "cell",
 #'
-#'                   # argument for semi/heter_sampleIDfree bulk simulation method
+#'                   # arguments for bulk simulation: select bulk simulation methods
+#'                   bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
+#'
+#'                   # argument required for semi/heter_sampleIDfree bulk simulation method
 #'                   heter_cell_type = 'malignant',
+#'
+#'                   # general simulation parameters
+#'                   ncells_perSample = 500,
+#'                   min_chunkSize = 20,
+#'                   use_chunk = 'random',
+#'
+#'                   # parameters for adjusting heterogeneity in sample ID-free bulk simulation
 #'                   dirichlet_cs_par = 0.1,
 #'                   min.subcluster.size = 20,
 #'                   max.num.cs = NA,
@@ -792,7 +796,6 @@ benchmarking_deconv = function(benchmarking_obj,
 #'                   # arguments to include tcga
 #'                   include_tcga = T,
 #'                   tcga_abbreviation = 'SKCM',
-#'                   purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 #'
 #'                   # export files for autogeneS and cibersortx
 #'                   create_autogeneS_input = T,
@@ -805,8 +808,7 @@ benchmarking_deconv = function(benchmarking_obj,
 #' # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'
 #' # 2) regression-based methods: 'nnls','cibersort','MuSiC','wRLM','RPC'
 #' # 3) reference free methods: 'linseed','debCAM'
-#' # 4) Bayesian-based methods: 'InstaPrism
-#' # 5) other deconvolution methods from immunedeconv package:
+#' # 4) other deconvolution methods from immunedeconv package:
 #' #     'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'
 #'
 #' benchmarking_deconv(benchmarking_obj,
@@ -824,10 +826,6 @@ benchmarking_deconv = function(benchmarking_obj,
 #'
 #'                     # arguments for reference-free methods
 #'                     refFree_methods = c('linseed','debCAM'),
-#'
-#'                     # arguments for Bayesian-based methods
-#'                     Bayesian_methods = c('InstaPrism'),
-#'                     key = 'malignant',  # this argument togther with 'colnames_of_sample' is highly recommended to run Bayesian based methods
 #'
 #'                     # arguments for other deconvolution methods
 #'                     immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'),

@@ -11,6 +11,7 @@ bulkSimulator_heter_sampleIDfree(
   colnames_of_subcluster = NA,
   simulated_frac = NULL,
   heter_cell_type = NA,
+  export_cellUsage = F,
   dirichlet_cs_par = 0.1,
   min.subcluster.size = 20,
   max.num.cs = NA
@@ -29,6 +30,8 @@ Set to NA if subclustering information is not available; the function will then 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns}
 
 \item{heter_cell_type}{name of the cell_type to maintain the highest level of heterogeneity. It is recommended to set this parameter to the name of the malignant cell types}
+
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F}
 
 \item{dirichlet_cs_par}{a numeric value determine the dispersion level of the simulated fractions. With lower value indicating higher dispersion level. Default = 0.1}
 

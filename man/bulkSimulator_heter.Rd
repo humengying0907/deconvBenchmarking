@@ -12,6 +12,7 @@ bulkSimulator_heter(
   simulated_frac = NULL,
   min_chunkSize = 5,
   use_chunk = "all",
+  export_cellUsage = FALSE,
   n.core = 1
 )
 }
@@ -26,11 +27,13 @@ bulkSimulator_heter(
 
 \item{simulated_frac}{a matrix with pre-defined fraction of different cell types, with samples in rows and cell_types in columns}
 
-\item{min_chunkSize}{minimum number of cells to aggregate for each cell type}
+\item{min_chunkSize}{minimum number of cells required to construct a particular cell-type component in the simulated bulk, such as requiring at least 20 cells for B cells, at least 20 cells for T cells, and so forth.}
 
 \item{use_chunk}{a character indicating which cells to pool together for the heter_cell_type. Default='all' other options include 'random'.
 When use_chunk = 'all', use all the cells belonging to the same patient for a given cell type to generate the certain cell type component in the simulated bulk;
 when use_chunk = 'random', randomly select 50-100\% of the cells belonging to the same patient for a given cell type}
+
+\item{export_cellUsage}{a logical variable determining whether to export cell names used to generate the simulated bulk. Default = F}
 
 \item{n.core}{number of cores to use for parallel programming. Default = 1}
 }

@@ -23,20 +23,32 @@ This function evaluates deconvolution performance on the deconvResults_obj retur
 # a complete pipeline to benchmarking deconvolution methods using bulk data simulated under various strategies
 
 # first create a benchmarking_obj using benchmarking_init():
-benchmarking_obj = benchmarking_init(scExpr = scExpr,
+# a standard benchmarking pipeline
+benchmarking_init(scExpr = scExpr,
                   scMeta = scMeta,
-
                   colnames_of_cellType = 'cell_type',
                   colnames_of_sample = 'sampleID',
 
                   # argument for fracSimulator_Beta()
+                  nbulk = 100,
                   fixed_cell_type = 'malignant',
 
-                  # arguments for bulk simulation
-                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree','favilaco','immunedeconv','SCDC'),
+                  # argument for training/testing splitting:
+                  training_ratio = 0.5,
+                  split_by = "cell",
 
-                  # argument for semi/heter_sampleIDfree bulk simulation method
+                  # arguments for bulk simulation: select bulk simulation methods
+                  bulkSimulator_methods = c('homo','semi','heter','heter_sampleIDfree'),
+
+                  # argument required for semi/heter_sampleIDfree bulk simulation method
                   heter_cell_type = 'malignant',
+
+                  # general simulation parameters
+                  ncells_perSample = 500,
+                  min_chunkSize = 20,
+                  use_chunk = 'random',
+
+                  # parameters for adjusting heterogeneity in sample ID-free bulk simulation
                   dirichlet_cs_par = 0.1,
                   min.subcluster.size = 20,
                   max.num.cs = NA,
@@ -50,7 +62,6 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
                   # arguments to include tcga
                   include_tcga = T,
                   tcga_abbreviation = 'SKCM',
-                  purity_methods =  c('ESTIMATE', 'ABSOLUTE', 'LUMP', 'IHC', 'CPE','ABSOLUTE_GDC'),
 
                   # export files for autogeneS and cibersortx
                   create_autogeneS_input = T,
@@ -63,8 +74,7 @@ benchmarking_obj = benchmarking_init(scExpr = scExpr,
 # 1) marker-based methods: 'firstPC','gsva','debCAM','TOAST'
 # 2) regression-based methods: 'nnls','cibersort','MuSiC','wRLM','RPC'
 # 3) reference free methods: 'linseed','debCAM'
-# 4) Bayesian-based methods: 'InstaPrism
-# 5) other deconvolution methods from immunedeconv package:
+# 4) other deconvolution methods from immunedeconv package:
 #     'xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'
 
 benchmarking_deconv(benchmarking_obj,
@@ -82,10 +92,6 @@ benchmarking_deconv(benchmarking_obj,
 
                     # arguments for reference-free methods
                     refFree_methods = c('linseed','debCAM'),
-
-                    # arguments for Bayesian-based methods
-                    Bayesian_methods = c('InstaPrism'),
-                    key = 'malignant',  # this argument togther with 'colnames_of_sample' is highly recommended to run Bayesian based methods
 
                     # arguments for other deconvolution methods
                     immunedeconv_methods = c('xcell','mcp_counter','epic','quantiseq','timer','abis','consensus_tme','estimate'),
